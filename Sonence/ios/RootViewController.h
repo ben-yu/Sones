@@ -8,9 +8,18 @@
 
 #import <UIKit/UIKit.h>
 
+#include "cocos2d.h"
+#include "HelloWorldScene.h"
 
 @interface RootViewController : UIViewController {
 
 }
+
+@property cocos2d::CCDirector *pDirector;
+@property HelloWorld *sceneptr;
+@property bool accelEnable;
+@property (nonatomic, retain) NSManagedObjectContext *managedObjectContext;
+@property (nonatomic, retain) NSManagedObjectModel *managedObjectModel;
+@property (nonatomic, retain) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
 @end

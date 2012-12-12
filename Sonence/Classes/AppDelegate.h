@@ -21,6 +21,11 @@ class  AppDelegate : private cocos2d::CCApplication
 public:
     AppDelegate();
     virtual ~AppDelegate();
+    
+    /**
+     @brief	Implement for initialize OpenGL instance, set source path, etc...
+     */
+    virtual bool initInstance();
 
     /**
     @brief    Implement CCDirector and CCScene init code here.
