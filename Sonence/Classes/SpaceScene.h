@@ -1,5 +1,5 @@
-#ifndef __HELLOWORLD_SCENE_H__
-#define __HELLOWORLD_SCENE_H__
+#ifndef __SpaceScene_SCENE_H__
+#define __SpaceScene_SCENE_H__
 
 #include "cocos2d.h"
 #include "CCParallaxNodeExtras.h"
@@ -9,21 +9,27 @@
 
 USING_NS_CC;
 
-class HelloWorld : public cocos2d::CCLayer
+class SpaceSceneLayer : public CCLayer
 {
 public:
+    
+    SpaceSceneLayer(void);
+    ~SpaceSceneLayer(void);
+    
     static float sysVer;
     
     static bool accelEnable;
     
     // Method 'init' in cocos2d-x returns bool, instead of 'id' in cocos2d-iphone (an object pointer)
-    virtual bool init();
+    virtual void onEnter();
     
     // there's no 'id' in cpp, so we recommend to return the class instance pointer
-    static cocos2d::CCScene* scene(float ver, bool accelEnabled, void *rootVC);
+    //static cocos2d::CCScene* scene(float ver, bool accelEnabled, void *rootVC);
     
     // a selector callback
     void menuCloseCallback(CCObject* pSender);
+    
+    void runGame();
     
     // scheduled Update
     void update(float dt);
@@ -42,6 +48,7 @@ public:
     void setEnemyInvisible(CCNode * node);
     void setFireInvisible(CCNode *node);
     float getTimeTick();
+
     void startTones();
     void stopTones();
     
@@ -53,9 +60,8 @@ public:
     void spawnHighFreqEnemy();
     void spawnAsteroid();
     
-    // preprocessor macro for "static create()" constructor ( node() deprecated )
-    CREATE_FUNC(HelloWorld);
-    
+    CREATE_FUNC(SpaceSceneLayer);
+        
 private:
     // Game Resources - Sprites
     cocos2d::CCSpriteBatchNode * _batchNode; // Background stuff
@@ -87,6 +93,7 @@ private:
     CCLabelTTF *tutorialText2;
     CCLabelTTF *tutorialText3;
     CCLabelTTF *tutorialText4;
+    CCLabelTTF *tutorialText5;
     
     //
     CCPoint playerPos;
@@ -112,6 +119,7 @@ private:
     bool playedTutorial = false;
     bool enemySpawned = false;
     bool asteroidSpawned = false;
+    bool gameOver = false;
     float tutorialDuration;
     float initTime;
     
@@ -120,7 +128,7 @@ private:
     int asteroidIndex;
     int destroyedAsteroids;
     float _nextAsteroidSpawn = 0.0;
-    int _nextShipLaser;
+    int _nextShipLaser = 0;
     float seed_freq;
     float win_height;
     float *sineTones;
@@ -128,4 +136,21 @@ private:
     
 };
 
-#endif // __HELLOWORLD_SCENE_H__
+class SpaceScene : public cocos2d::CCScene
+{
+public:
+    SpaceScene();
+    virtual void runGame();
+    virtual void onEnter();
+    
+    // The CallBack for back to the main menu scene
+    virtual void MainMenuCallback(CCObject* pSender);
+    
+    iOSBridge::ToneGeneratorHelper* getToneGenerator(void);
+    void setToneGenerator(iOSBridge::ToneGeneratorHelper *);
+private:
+    CCScene* mainMenuPtr;
+    iOSBridge::ToneGeneratorHelper *toneGenHelp;
+};
+
+#endif // __SpaceScene_SCENE_H__

@@ -19,12 +19,14 @@
 #include "Envelope.h"
 #include "Asymp.h"
 #include "BlitSaw.h"
+#include "FileLoop.h"
 
 using namespace stk;
 struct AudioData{
     Mandolin *myMandolin;
     Envelope **myAsymp;
     BlitSaw **sineWaves;
+    FileLoop *backgroundMusic;
     int numAsteroids;
 };
 
@@ -38,8 +40,12 @@ struct AudioData{
     AudioStreamBasicDescription     monoStreamFormat;
     AUGraph                         processingGraph;
     BOOL                            playing;
+    BOOL                            momuInitialized;
+    BOOL                            backgroundEnabled;
+    BOOL                            fxEnabled;
     BOOL                            interruptedDuringPlayback;
     AudioUnit                       mixerUnit;
+    
 @public
     Float32            *sinBuffer;
     struct AudioData audioData;

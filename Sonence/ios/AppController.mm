@@ -3,7 +3,7 @@
 //  Sonence
 //
 //  Created by Benjamin Yu on 2012-10-14.
-//  Copyright __MyCompanyName__ 2012. All rights reserved.
+//  Copyright APL 2012. All rights reserved.
 //
 #import <UIKit/UIKit.h>
 #import "AppController.h"
@@ -32,7 +32,6 @@ static AppDelegate s_sharedApplication;
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 
     // Override point for customization after application launch.
-/*
     // Add the view controller's view to the window and display.
     window = [[UIWindow alloc] initWithFrame: [[UIScreen mainScreen] bounds]];
     EAGLView *__glView = [EAGLView viewWithFrame: [window bounds]
@@ -65,10 +64,10 @@ static AppDelegate s_sharedApplication;
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
 
     cocos2d::CCApplication::sharedApplication()->run();
- */
+ /*
     MainMenuViewController *controller = (MainMenuViewController *) self.window.rootViewController;
     controller.managedObjectContext = self.managedObjectContext;
-    
+   */ 
     return YES;
 }
 

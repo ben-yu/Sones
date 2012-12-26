@@ -1,53 +1,36 @@
-#include "HelloWorldScene.h"
+#include "SpaceScene.h"
+#include "MainMenu.h"
 #include "SimpleAudioEngine.h"
 #include "ToneGeneratorHelper.h"
 #include "Ship.h"
+#include "cocos2d.h"
 #include <sstream>
 
 using namespace cocos2d;
 using namespace CocosDenshion;
 using namespace std;
 
-float HelloWorld::sysVer = 0.0;
-bool HelloWorld::accelEnable;
+float SpaceSceneLayer::sysVer = 0.0;
+bool SpaceSceneLayer::accelEnable;
 
-CCScene* HelloWorld::scene(float ver, bool accelEnabled, void *rootVC)
+SpaceSceneLayer::SpaceSceneLayer(void)
 {
-    // 'scene' is an autorelease object
-    CCScene *scene = CCScene::create();
-    
-    // Save OS version
-    sysVer = ver;
-    HelloWorld::accelEnable = accelEnabled;
-    // 'layer' is an autorelease object
-    HelloWorld *layer = HelloWorld::create();
-    layer->dataStoreHandler->rootVCPtr = rootVC;
-    
-    // add layer as a child to scene
-    scene->addChild(layer);
-        
-    // return the scene
-    return scene;
+}
+
+SpaceSceneLayer::~SpaceSceneLayer(void)
+{
 }
 
 // on "init" you need to initialize your instance
-bool HelloWorld::init()
+void SpaceSceneLayer::onEnter()
 {
     //////////////////////////////
     // 1. super init first
-    if ( !CCLayer::init() )
-    {
-        return false;
-    }
+    CCLayer::onEnter();
     
     // Get window sizes from director
-    if (sysVer < 6.0) {
-        winWidth = CCDirector::sharedDirector()->getWinSize().width;
-        winHeight = CCDirector::sharedDirector()->getWinSize().height;
-    } else {
-        winWidth = CCDirector::sharedDirector()->getWinSize().height;
-        winHeight = CCDirector::sharedDirector()->getWinSize().width;
-    }
+    winWidth = CCDirector::sharedDirector()->getWinSize().height;
+    winHeight = CCDirector::sharedDirector()->getWinSize().width;
     
     //////////////////////////////
     //
@@ -62,50 +45,22 @@ bool HelloWorld::init()
     tutorialText2 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     tutorialText3 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     tutorialText4 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
+    tutorialText5 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     
-    if (sysVer < 6.0) {
-        distLabel->setRotation(90.0f);
-        distLabel->setPosition(ccp(20,winHeight - 60));
-    } else {
-        distLabel->setPosition(ccp(50,40));
-    }
+
+    distLabel->setPosition(ccp(50,20));
     this->addChild(distLabel, 1);
     distLabel->setVisible(false);
     
-    
-    if (sysVer < 6.0) {
-        scoreLabel->setRotation(90.0f);
-        scoreLabel->setPosition(ccp(40, winHeight - 80));
-    } else {
-        scoreLabel->setPosition(ccp(70, 40));
-    }
+    scoreLabel->setPosition(ccp(70, 40));
     this->addChild(scoreLabel, 1);
     scoreLabel->setVisible(false);
     
-    if (sysVer < 6.0) {
-        tutorialText->setRotation(90.0f);
-        tutorialText->setPosition(ccp(winWidth/2, winHeight/2));
-    } else {
-        tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
-    }
-    if (sysVer < 6.0) {
-        tutorialText2->setRotation(90.0f);
-        tutorialText2->setPosition(ccp(winWidth/2, winHeight/2));
-    } else {
-        tutorialText2->setPosition(ccp(winHeight/2, winWidth/2 ));
-    }
-    if (sysVer < 6.0) {
-        tutorialText3->setRotation(90.0f);
-        tutorialText3->setPosition(ccp(winWidth/2, winHeight/2));
-    } else {
-        tutorialText3->setPosition(ccp(winHeight/2, winWidth/2 ));
-    }
-    if (sysVer < 6.0) {
-        tutorialText4->setRotation(90.0f);
-        tutorialText4->setPosition(ccp(winWidth/2, winHeight/2));
-    } else {
-        tutorialText4->setPosition(ccp(winHeight/2, winWidth/2 ));
-    }
+    tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
+    tutorialText2->setPosition(ccp(winHeight/2, winWidth/2 ));
+    tutorialText3->setPosition(ccp(winHeight/2, winWidth/2 ));
+    tutorialText4->setPosition(ccp(winHeight/2, winWidth/2 ));
+    tutorialText5->setPosition(ccp(winHeight/2, winWidth/2 ));
     
     stringstream tempString;
     tempString<<"RED ALERT!\n Incoming Alien Fighters!";
@@ -124,7 +79,7 @@ bool HelloWorld::init()
     tutorialText2->setVisible(false);
     
     tempString.str("");
-    tempString<<"Lower frequencies will come from your right.";
+    tempString<<"Lower frequencies will come from your left.";
     tutorialText3->setString(tempString.str().c_str());
     tutorialText3->setColor(ccc3(0, 255, 0));
     tutorialText3->setHorizontalAlignment(kCCTextAlignmentCenter);
@@ -133,12 +88,20 @@ bool HelloWorld::init()
     
   
     tempString.str("");
-    tempString<<"Higher frequencies will come from your left.";
+    tempString<<"Higher frequencies will come from your right.";
     tutorialText4->setString(tempString.str().c_str());
     tutorialText4->setColor(ccc3(0, 255, 0));
     tutorialText4->setHorizontalAlignment(kCCTextAlignmentCenter);
     this->addChild(tutorialText4);
     tutorialText4->setVisible(false);
+    
+    tempString.str("");
+    tempString<<"Avoid shooting the red boxes!";
+    tutorialText5->setString(tempString.str().c_str());
+    tutorialText5->setColor(ccc3(0, 255, 0));
+    tutorialText5->setHorizontalAlignment(kCCTextAlignmentCenter);
+    this->addChild(tutorialText5);
+    tutorialText5->setVisible(false);
     
     //////////////////////////////
     //
@@ -212,14 +175,8 @@ bool HelloWorld::init()
     playerShip->runAction(seq);
     
     // Set ship sprite and pos
-    if (sysVer < 6.0) {
-        playerPos = ccp(winWidth * 0.1, winHeight * 0.5);
-        playerShip->setPosition(playerPos);
-        playerShip->setRotation(90.0f);
-    } else {
-        playerPos = ccp(winHeight * 0.5, winWidth * 0.1);
-        playerShip->setPosition(playerPos);
-    }
+    playerPos = ccp(winHeight * 0.5, winWidth * 0.1);
+    playerShip->setPosition(playerPos);
     
     // Lasers
     #define KNUMLASERS 2
@@ -258,42 +215,25 @@ bool HelloWorld::init()
     CCPoint bgSpeed = ccp(0.05, 0.05);
     
     // 4) Add children to CCParallaxNode
-    if (sysVer < 6.0) {
-        _backgroundNode->addChild(_spacedust1, -2 , dustSpeed, ccp(0,0) ); // 2
-        _backgroundNode->addChild(_spacedust2, -2 , dustSpeed, ccp(winWidth,0));
-        
-        _backgroundNode->addChild(_galaxy,-1, bgSpeed , ccp(0,winWidth * 0.7));
-        _backgroundNode->addChild(_planetsunrise,-1 , bgSpeed,ccp(800,winWidth * 0.8));
-        _backgroundNode->addChild(_spacialanomaly,-1, bgSpeed,ccp(900,winWidth * 0.3));
-        _backgroundNode->addChild(_spacialanomaly2,-1, bgSpeed,ccp(1000,winWidth * 0.9));
-    } else {
-        _spacedust1->setRotation(90.0f);
-        _spacedust2->setRotation(90.0f);
-        _backgroundNode->addChild(_spacedust1, -2 , dustSpeed, ccp(0,0) ); // 2
-        _backgroundNode->addChild(_spacedust2, -2 , dustSpeed, ccp(0,winWidth));
-        
-        _backgroundNode->addChild(_galaxy,-1, bgSpeed , ccp(winWidth * 0.7,0));
-        _backgroundNode->addChild(_planetsunrise,-1 , bgSpeed,ccp(winWidth * 0.8,800));
-        _backgroundNode->addChild(_spacialanomaly,-1, bgSpeed,ccp(winWidth * 0.3,1000));
-        _backgroundNode->addChild(_spacialanomaly2,-1, bgSpeed,ccp(winWidth * 0.9,1200));
-    }
+    _spacedust1->setRotation(90.0f);
+    _spacedust2->setRotation(90.0f);
+    _backgroundNode->addChild(_spacedust1, -2 , dustSpeed, ccp(0,0) ); // 2
+    _backgroundNode->addChild(_spacedust2, -2 , dustSpeed, ccp(0,winWidth));
+    
+    _backgroundNode->addChild(_galaxy,-1, bgSpeed , ccp(winWidth * 0.7,0));
+    _backgroundNode->addChild(_planetsunrise,-1 , bgSpeed,ccp(winWidth * 0.8,800));
+    _backgroundNode->addChild(_spacialanomaly,-1, bgSpeed,ccp(winWidth * 0.3,1000));
+    _backgroundNode->addChild(_spacialanomaly2,-1, bgSpeed,ccp(winWidth * 0.9,1200));
     CCSprite *hp = CCSprite::create("hp.png");
     hpBar = CCProgressTimer::create(hp);
     hpBar->setType(kCCProgressTimerTypeBar);
-    if (sysVer < 6.0) {
-        //    Setup for a bar starting from the left since the midpoint is 0 for the x
-        hpBar->setMidpoint(ccp(0,0));
-        //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
-        hpBar->setBarChangeRate(ccp(1, 0));
-    } else {
-        hpBar->setMidpoint(ccp(0,0));
-        //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
-        hpBar->setBarChangeRate(ccp(0, 1));
-    }
+    hpBar->setMidpoint(ccp(0,0));
+    //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
+    hpBar->setBarChangeRate(ccp(1, 0));
     txtWindow = CCSprite::create("futureui1.png");
     healthBar = CCSprite::create("health.png");
     txtWindow->setScale(0.27);
-    if (sysVer < 6.0) {
+    if (sysVer < 0.0) {
         txtWindow->setRotation(90.0f);
         healthBar->setRotation(90.0f);
         hpBar->setRotation(90.0f);
@@ -348,13 +288,13 @@ bool HelloWorld::init()
         
     }
     
-    this->scheduleOnce(schedule_selector(HelloWorld::playTutorial), 2.0);
-    this->scheduleOnce(schedule_selector(HelloWorld::endTutorial), 35.0);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::playTutorial), 2.0);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::endTutorial), 35.0);
     this->setTouchEnabled(true); // Enable Touch
-    this->setAccelerometerEnabled(HelloWorld::accelEnable);
+    this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
     
     this->scheduleUpdate(); // Start updating
-    toneGenHelp = new iOSBridge::ToneGeneratorHelper(KNUMENEMIES); // Start MOMU
+    this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator(); // Start MOMU
     dataStoreHandler = new iOSBridge::DataStore();
     seed_freq = floorf(randomValueBetween(250.0,300.0));
     
@@ -364,30 +304,27 @@ bool HelloWorld::init()
     
     _nextAsteroid = 0;
     _curAsteroidCount = 0;
-    
-    return true;
 }
 
-void HelloWorld::update(float dt) {
+void SpaceSceneLayer::update(float dt) {
     
     float curTimeMillis = getTimeTick();
     
     CCSize winSize = CCDirector::sharedDirector()->getWinSize();
     
-    if (_health <= 0) {
+    if (_health <= 0 && !gameOver) {
+        gameOver = true;
+        tutorialText = CCLabelTTF::create("", "Audiowide-Regular", 30.0);
+
         stringstream tempString;
         tempString<<"GAME OVER!";
         tutorialText->setString(tempString.str().c_str());
+        tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
         
-        CCFiniteTimeAction *fadeIn = CCFadeIn::create(1.0);
-        //fadeIn->setDuration(1.0);
-        CCDelayTime *waitDelay = CCDelayTime::create(0.5);
-        CCFiniteTimeAction *fadeOut = CCFadeOut::create(1.0);
         tutorialText->setVisible(true);
-        tutorialText->setOpacity(1.0);
-        tutorialText->runAction(CCSequence::create(fadeIn,waitDelay,fadeOut,NULL));
-        runAction(CCRipple3D::create(CCPointMake(winWidth/2,winHeight/2), 50.0, 4.0, 50.0, ccg(32,24), 5));
-        this->scheduleOnce(schedule_selector(HelloWorld::menuCloseCallback), 15.0);
+        tutorialText->setOpacity(1.0);;
+        runAction(CCWaves3D::create(5, 40, ccg(15,10), 10));
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::menuCloseCallback), 15.0);
     }
     
     //////////////////////////////
@@ -397,7 +334,7 @@ void HelloWorld::update(float dt) {
     //////////////////////////////
     
     CCPoint backgroundScrollVert;
-    if (sysVer < 6.0) {
+    if (sysVer < 0.0) {
         backgroundScrollVert = ccp(-500,0) ;
     } else {
         backgroundScrollVert = ccp(0,-500) ;
@@ -407,7 +344,7 @@ void HelloWorld::update(float dt) {
     CCArray *spaceDusts = CCArray::arrayWithCapacity(2) ;
     spaceDusts->addObject(_spacedust1) ;
     spaceDusts->addObject(_spacedust2) ;
-    if (sysVer < 6.0) {
+    if (sysVer < 0.0) {
         for ( int ii = 0  ; ii < spaceDusts->count() ; ii++ ) {
             CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
             float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).x  ;
@@ -432,7 +369,7 @@ void HelloWorld::update(float dt) {
     backGrounds->addObject(_planetsunrise) ;
     backGrounds->addObject(_spacialanomaly) ;
     backGrounds->addObject(_spacialanomaly2) ;
-    if (sysVer < 6.0) {
+    if (sysVer < 0.0) {
         for ( int ii = 0 ; ii <backGrounds->count() ; ii++ ) {
             CCSprite * background = (CCSprite *)(backGrounds->objectAtIndex(ii)) ;
             float xPosition = _backgroundNode->convertToWorldSpace(background->getPosition()).x ;
@@ -461,17 +398,16 @@ void HelloWorld::update(float dt) {
     if (!enemySpawned && playedTutorial) {
         enemySpawned = true;
         
-        float spawnRate = randomValueBetween(3.0,5.0) * 1000;
-        _nextAsteroidSpawn = spawnRate + curTimeMillis;
+        float spawnRate = curTimeMillis/5000.0;
         
-        this->scheduleOnce(schedule_selector(HelloWorld::spawnEnemy), 2.0);
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnEnemy), 2.0 - spawnRate);
     }
     
     if ((_curAsteroidCount < KNUMASTEROIDS || _nextAsteroid != 0 )&& playedTutorial) {
         _curAsteroidCount++;
         float spawnRate = randomValueBetween(0.1,0.3);
         
-        this->scheduleOnce(schedule_selector(HelloWorld::spawnAsteroid), spawnRate);
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnAsteroid), spawnRate);
     }
     
     //////////////////////////////
@@ -494,7 +430,7 @@ void HelloWorld::update(float dt) {
                 shipLaser->setVisible(false);
                 asteroid->setVisible(false);
                 setAsteroidInvisible(asteroid);
-                runAction(CCWaves3D::create(5, 40, ccg(15,10), 3));
+                //runAction(CCWaves3D::create(5, 40, ccg(15,10), 3));
                 _backgroundNode->removeChild(asteroid, 1);
                 continue ;
             }
@@ -524,7 +460,7 @@ void HelloWorld::update(float dt) {
                 float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
-                dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
+                //dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
                 continue ;
             }
         }
@@ -533,7 +469,7 @@ void HelloWorld::update(float dt) {
             setEnemyInvisible(enemy);
             _backgroundNode->removeChild(enemy, 1);
             float tmpVol = toneGenHelp->removeTone(index);
-            //playerShip->runAction( CCBlink::create(1.0, 5));
+            playerShip->runAction( CCBlink::create(1.0, 5));
             alphaTargets[index] = 0.0;
             enemySpawned = false;
             _health -= 10.0;
@@ -561,7 +497,7 @@ void HelloWorld::update(float dt) {
     scoreLabel->setString(tempString.str().c_str());
 }
 
-void HelloWorld::draw(){
+void SpaceSceneLayer::draw(){
     // Draw Grid Lines
     
     glEnable(GL_BLEND); // Enable blending for alpha
@@ -578,40 +514,40 @@ void HelloWorld::draw(){
     ccDrawCircle( playerShip->getPosition(), 175, 0, 50, false);
     ccDrawCircle( playerShip->getPosition(), 200, 0, 50, false);
     ccDrawCircle( playerShip->getPosition(), 250, 0, 50, false);
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 9*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 8*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 7*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 6*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 5*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 4*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 3*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 2*winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, winHeight/10));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth, 0));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(9*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(8*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(7*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(6*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(5*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(4*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(3*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(2*winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight/10,winWidth));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth));
     ccDrawColor4F(0.5, 1.0, 0.5, 0.3);
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.1, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.1, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.2, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.2, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.3, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.3, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.4, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.4, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.5, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.5, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.6, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.6, 0));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.7, winHeight));
-    ccDrawLine(playerShip->getPosition(), ccp(winWidth*0.7, 0));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.1));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.1));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.2));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.2));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.3));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.3));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.4));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.4));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.5));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.5));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.6));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.6));
+    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.7));
+    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.7));
 
 }
 
-void HelloWorld::playTutorial()
+void SpaceSceneLayer::playTutorial()
 {
     CCFiniteTimeAction *fadeIn = CCFadeIn::create(1.0);
     fadeIn->setDuration(1.0);
-    CCDelayTime *waitDelay = CCDelayTime::create(0.5);
+    CCDelayTime *waitDelay = CCDelayTime::create(1.5);
     CCFiniteTimeAction *fadeOut = CCFadeOut::create(1.0);
     fadeOut->setDuration(1.0);
     tutorialText->setOpacity(0);
@@ -622,6 +558,8 @@ void HelloWorld::playTutorial()
     tutorialText3->setVisible(true);
     tutorialText4->setOpacity(0);
     tutorialText4->setVisible(true);
+    tutorialText5->setOpacity(0);
+    tutorialText5->setVisible(true);
     
     tutorialText->runAction(CCSequence::create (fadeIn,waitDelay,fadeOut,fadeIn,waitDelay,fadeOut,NULL));
     CCFiniteTimeAction *initialDelay = CCDelayTime::create(5.0);
@@ -631,22 +569,25 @@ void HelloWorld::playTutorial()
     tutorialText2->runAction(CCSequence::create(CCDelayTime::create(10.0),fadeOut,NULL));
     initialDelay->setDuration(13.5);
     tutorialText3->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
-    tutorialText3->runAction(CCSequence::create(CCDelayTime::create(15.0),fadeOut,NULL));
-    this->scheduleOnce(schedule_selector(HelloWorld::spawnLowFreqEnemy), 13.5);
+    tutorialText3->runAction(CCSequence::create(CCDelayTime::create(17.0),fadeOut,NULL));
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnLowFreqEnemy), 13.5);
     initialDelay->setDuration(24.0);
     tutorialText4->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
-    tutorialText4->runAction(CCSequence::create(CCDelayTime::create(25.0),fadeOut,NULL));
-    this->scheduleOnce(schedule_selector(HelloWorld::spawnHighFreqEnemy), 24.0);
+    tutorialText4->runAction(CCSequence::create(CCDelayTime::create(27.0),fadeOut,NULL));
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnHighFreqEnemy), 24.0);
+    initialDelay->setDuration(30.0);
+    tutorialText5->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
+    tutorialText5->runAction(CCSequence::create(CCDelayTime::create(32.0),fadeOut,NULL));
 }
 
-void HelloWorld::endTutorial()
+void SpaceSceneLayer::endTutorial()
 {
     playedTutorial = true;
     distLabel->setVisible(true);
     scoreLabel->setVisible(true);
 }
 
-void HelloWorld::spawnEnemy()
+void SpaceSceneLayer::spawnEnemy()
 {
     double randDuration = randomValueBetweenD(8.0,9.0);
     int multiple = (int) floorf(randomValueBetweenD(1.0,11.0)); // Only generate harmonic pure-tones
@@ -658,7 +599,7 @@ void HelloWorld::spawnEnemy()
     enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, 0.06, 0); // Add pure-tone
+    toneGenHelp->addTone(randFrequency, 0.05, 0); // Add pure-tone
     
     enemy->stopAllActions();
     CCAnimation *normal = animCache->animationByName("enemy");
@@ -671,25 +612,18 @@ void HelloWorld::spawnEnemy()
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
 
     timeTargets[_nextAsteroid] = randDuration;
-    if (sysVer < 6.0) {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(winWidth * 0.1,winHeight * 0.5)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setEnemyInvisible)),NULL);
-        enemy->setPosition( ccp(winWidth+enemy->getContentSize().width/2,randY));
-        enemy->setRotation(-(randY/winHeight)*90.0f - 225.0f);
-        enemy->runAction (moveSeq);
-        enemy->runAction(seq);
-        enemy->runAction(fadeAnim);
-    } else {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(winWidth * 0.5,winHeight * 0.1)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setEnemyInvisible)),NULL);
-        enemy->setPosition( ccp(randAsteroidPos,winWidth+enemy->getContentSize().width/2));
-        enemy->runAction (moveSeq);
-        enemy->runAction(seq);
-    }
+
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
+                                                                      playerShip->getPosition()),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
+    enemy->setPosition( ccp(randY,winWidth+enemy->getContentSize().width/2));
+    enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
+    enemy->runAction (moveSeq);
+    enemy->runAction(seq);
+    enemy->runAction(fadeAnim);
     enemy->setVisible(true);
 }
 
-void HelloWorld::spawnEnemyAtLoc(float y)
+void SpaceSceneLayer::spawnEnemyAtLoc(float y)
 {
     double randDuration = randomValueBetweenD(8.0,9.0);
     int multiple = y; // Only generate harmonic pure-tones
@@ -714,41 +648,31 @@ void HelloWorld::spawnEnemyAtLoc(float y)
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
     
     timeTargets[_nextAsteroid] = randDuration;
-    if (sysVer < 6.0) {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(winWidth * 0.1,winHeight * 0.5)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setEnemyInvisible)),NULL);
-        enemy->setPosition( ccp(winWidth+enemy->getContentSize().width/2,randY));
-        enemy->setRotation(-(randY/winHeight)*90.0f - 225.0f);
-        enemy->runAction (moveSeq);
-        enemy->runAction(seq);
-        enemy->runAction(fadeAnim);
-    } else {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(winWidth * 0.5,winHeight * 0.1)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setEnemyInvisible)),NULL);
-        enemy->setPosition( ccp(randAsteroidPos,winWidth+enemy->getContentSize().width/2));
-        enemy->runAction (moveSeq);
-        enemy->runAction(seq);
-    }
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
+                                                                      ccp(winHeight * 0.5,winWidth * 0.1)),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
+    enemy->setPosition(ccp(randY,winWidth+enemy->getContentSize().width/2));
+    enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
+    enemy->runAction (moveSeq);
+    enemy->runAction(seq);
+    enemy->runAction(fadeAnim);
     enemy->setVisible(true);
 }
 
-void HelloWorld::spawnLowFreqEnemy()
+void SpaceSceneLayer::spawnLowFreqEnemy()
 {
     spawnEnemyAtLoc(1);
 }
 
-void HelloWorld::spawnHighFreqEnemy()
+void SpaceSceneLayer::spawnHighFreqEnemy()
 {
     spawnEnemyAtLoc(9);
 }
 
-void HelloWorld::spawnAsteroid()
+void SpaceSceneLayer::spawnAsteroid()
 {
     double randDuration = randomValueBetweenD(2.0,3.0);
-    int multiple = (int) floorf(randomValueBetweenD(1.0,11.0)); // Only generate harmonic pure-tones
-    float randFrequency = multiple * seed_freq;
+    int multiple = (int) floorf(randomValueBetweenD(3.0,11.0)); // Only generate harmonic pure-tones
     float randY = winWidth/10.0 * multiple;
-    float randAsteroidPos = randomValueBetween(0.0,winWidth);
     
     CCInteger *randomIndex = (CCInteger *) _spawnQueue->randomObject();
     
@@ -760,55 +684,48 @@ void HelloWorld::spawnAsteroid()
     CCAnimate *animN = CCAnimate::create(normal);
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     
-    if (sysVer < 6.0) {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(0,randY)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setAsteroidInvisible)),NULL);
-        asteroid->setPosition( ccp(winWidth+asteroid->getContentSize().width/2,randY));
-        asteroid->setRotation(-(randY/winHeight)*90.0f - 225.0f);
-        asteroid->runAction (moveSeq);
-        asteroid->runAction(seq);
-    } else {
-        CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                          ccp(randY, 0)),CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setAsteroidInvisible)),NULL);
-        asteroid->setPosition( ccp(randAsteroidPos,winWidth+asteroid->getContentSize().width/2));
-        asteroid->runAction (moveSeq);
-        asteroid->runAction(seq);
-    }
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
+                                                                      ccp(0,randY)),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setAsteroidInvisible)),NULL);
+    asteroid->setPosition( ccp(winHeight,randY));
+    asteroid->setRotation(-(randY/winHeight)*90.0f - 225.0f);
+    asteroid->runAction (moveSeq);
+    asteroid->runAction(seq);
+    
     asteroid->setVisible(true);
     _spawnQueue->removeObject(randomIndex);
 }
 
-float HelloWorld::randomValueBetween( float low , float high ) {
+float SpaceSceneLayer::randomValueBetween( float low , float high ) {
     return (((float) arc4random() / 0xFFFFFFFFu) * (high - low)) + low;
 }
 
-double HelloWorld::randomValueBetweenD( double low , double high ) {
+double SpaceSceneLayer::randomValueBetweenD( double low , double high ) {
     return (((double) arc4random() / 0xFFFFFFFFu) * (high - low)) + low;
 }
 
-float HelloWorld::getTimeTick() {
+float SpaceSceneLayer::getTimeTick() {
     timeval time;
     gettimeofday(&time, NULL);
     unsigned long millisecs = (time.tv_sec * 1000) + (time.tv_usec / 1000);
     return (float) millisecs;
 }
 
-void HelloWorld::setInvisible(CCNode * node) {
+void SpaceSceneLayer::setInvisible(CCNode * node) {
     node->setVisible(false) ;
 }
 
-void HelloWorld::setAsteroidInvisible(CCNode * node) {
+void SpaceSceneLayer::setAsteroidInvisible(CCNode * node) {
     node->setVisible(false);
     _spawnQueue->addObject(CCInteger::create(node->getTag()));
     _curAsteroidCount--;
 }
 
-void HelloWorld::setEnemyInvisible(CCNode * node) {
+void SpaceSceneLayer::setEnemyInvisible(CCNode * node) {
     node->setVisible(false);
     //enemySpawned = false;
 }
 
-void HelloWorld::setFireInvisible(CCNode *emitter){
+void SpaceSceneLayer::setFireInvisible(CCNode *emitter){
     CCSize winSize = CCDirector::sharedDirector()->getWinSize() ;
     asteroidSpawned = false;
     emitter->setVisible(false);
@@ -816,15 +733,15 @@ void HelloWorld::setFireInvisible(CCNode *emitter){
     
 }
 
-void HelloWorld::stopTones(){
+void SpaceSceneLayer::stopTones(){
     toneGenHelp->stop();
 }
 
-void HelloWorld::ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
+void SpaceSceneLayer::ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
 {
 
 }
-void HelloWorld::ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
+void SpaceSceneLayer::ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
 {
     CCPoint mean_touch;
     CCSetIterator iter = touches->begin();
@@ -845,7 +762,7 @@ void HelloWorld::ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event
     playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
 }
 
-void HelloWorld::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
+void SpaceSceneLayer::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
 {
     CCPoint mean_touch;
     CCSetIterator iter = touches->begin();
@@ -874,12 +791,12 @@ void HelloWorld::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event
     shipLaser->stopAllActions() ;
     shipLaser->runAction( CCSequence::create (
                                               CCMoveTo::create(0.5,ccp(mean_touch.x,mean_touch.y)),
-                                              CCCallFuncN::create(this,callfuncN_selector(HelloWorld::setInvisible)) ,
+                                              CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setInvisible)) ,
                                               NULL  // DO NOT FORGET TO TERMINATE WITH NULL
                                               ) ) ;
 }
 
-void HelloWorld::didAccelerate(CCAcceleration* pAccelerationValue) {
+void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
 #define KFILTERINGFACTOR 0.1
 #define KRESTACCELX -0.0
 #define KSHIPMAXPOINTSPERSEC (winSize.height*0.5)
@@ -908,12 +825,71 @@ void HelloWorld::didAccelerate(CCAcceleration* pAccelerationValue) {
     }
 }
 
-
-void HelloWorld::menuCloseCallback(CCObject* pSender)
+void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
 {
-    CCDirector::sharedDirector()->end();
+    CCScene* pScene = MainMenu::create();
+    CCLayer* pLayer = new MainMenuLayer();
     
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
-    exit(0);
-#endif
+    toneGenHelp->stop();
+    ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
+    
+    pScene->addChild(pLayer);
+    CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+SpaceScene::SpaceScene()
+{
+    CCScene::init();
+}
+
+iOSBridge::ToneGeneratorHelper* SpaceScene::getToneGenerator()
+{
+    return this->toneGenHelp;
+}
+
+void SpaceScene::setToneGenerator(iOSBridge::ToneGeneratorHelper * gen)
+{
+    this->toneGenHelp = gen;
+}
+
+void SpaceScene::runGame()
+{
+    CCLayer* pLayer = new SpaceSceneLayer();
+    addChild(pLayer);
+    pLayer->autorelease();
+    
+    CCDirector::sharedDirector()->replaceScene((CCScene *)this);
+}
+
+void SpaceScene::onEnter()
+{
+    CCScene::onEnter();
+        
+    //add the menu item for back to main menu
+    //#if (CC_TARGET_PLATFORM == CC_PLATFORM_MARMALADE)
+    //    CCLabelBMFont* label = CCLabelBMFont::create("MainMenu",  "fonts/arial16.fnt");
+    //#else
+    CCLabelTTF* label = CCLabelTTF::create("MainMenu", "Arial", 20);
+    //#endif
+    CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(SpaceScene::MainMenuCallback));
+    
+    CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    pMenu->setPosition( CCPointZero );
+    pMenuItem->setPosition( CCPointMake( s.width - 50, 25) );
+    
+    addChild(pMenu, 1);
+}
+
+void SpaceScene::MainMenuCallback(CCObject* pSender)
+{
+    CCScene* pScene = CCScene::create();
+    CCLayer* pLayer = new MainMenuLayer();
+    pLayer->autorelease();
+    
+    toneGenHelp->removeTone(0);
+    ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
+    
+    pScene->addChild(pLayer);
+    CCDirector::sharedDirector()->replaceScene(pScene);
 }

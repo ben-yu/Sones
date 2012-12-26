@@ -31,10 +31,12 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     
     for(int i=0; i<framesize; i++)
     {
-        SAMPLE outz = 0.0;
+        SAMPLE outz = data->backgroundMusic->tick();
+        //SAMPLE outz = 0.0;
         for (int j=0; j < data->numAsteroids; j++) {
             Float32 amp = data->myAsymp[j]->tick();
             outz += ((Float32) (pow(10.0,(amp - 98.0)/20.0))) * data->sineWaves[j]->tick();
+            //outz += data->myAsymp[j]->tick() * data->sineWaves[j]->tick();
             //if (amp > 60.9)
             //    NSLog(@"decibel level is %f", outz);
         }
@@ -66,35 +68,68 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     if (self) {
         audioData.numAsteroids = numOfAsteroids;
         audioData.myMandolin = new Mandolin(400);
-        audioData.myAsymp = (Envelope **) calloc(sizeof(void *), 5);
-        audioData.sineWaves = (BlitSaw **) calloc(sizeof(void *), 5);
+        NSBundle *mainBundle = [NSBundle mainBundle];
+        NSString *myFile = [mainBundle pathForResource: @"background-music-aac" ofType: @"wav"];
+        audioData.backgroundMusic = new FileLoop(std::string([myFile UTF8String]));
+        audioData.myAsymp = (Envelope **) calloc(sizeof(void *), numOfAsteroids);
+        audioData.sineWaves = (BlitSaw **) calloc(sizeof(void *), numOfAsteroids);
         for (int i=0; i<numOfAsteroids; i++) {
             audioData.sineWaves[i] = new BlitSaw();
             audioData.myAsymp[i] = new Envelope();
         }
-        // init audio
-        NSLog(@"Initializing Audio");
-        
-        // init the MoAudio layer
-        bool result = MoAudio::init(SRATE, FRAMESIZE, NUMCHANNELS);
-        
-        if (!result)
-        {
-            NSLog(@"cannot initialize real-time audio!");
-            return self;
-        }
-        
-        // start the audio layer, registering a callback method
-        result = MoAudio::start( audioCallback, &audioData);
-        if (!result)
-        {
-            NSLog(@"cannot start real-time audio!");
-            return self;
+        if (!momuInitialized) {
+            // init audio
+            NSLog(@"Initializing Audio");
+            // init the MoAudio layer
+            bool result = MoAudio::init(SRATE, FRAMESIZE, NUMCHANNELS);
+            
+            if (!result)
+            {
+                NSLog(@"cannot initialize real-time audio!");
+                return self;
+            }
+            
+            // start the audio layer, registering a callback method
+            result = MoAudio::start( audioCallback, &audioData);
+            if (!result)
+            {
+                NSLog(@"cannot start real-time audio!");
+                return self;
+            }
+            momuInitialized = true;
         }
         self.playing = YES;
     }
     
     return self;
+}
+
+- (id)initWithBackground {
+    self = [super init];
+    if (self) {
+        audioData.backgroundMusic = new FileLoop("background-music-aac.wav");
+        if (!momuInitialized) {
+            // init audio
+            NSLog(@"Initializing Audio");
+            // init the MoAudio layer
+            bool result = MoAudio::init(SRATE, FRAMESIZE, NUMCHANNELS);
+            
+            if (!result)
+            {
+                NSLog(@"cannot initialize real-time audio!");
+                return self;
+            }
+            
+            // start the audio layer, registering a callback method
+            result = MoAudio::start( audioCallback, &audioData);
+            if (!result)
+            {
+                NSLog(@"cannot start real-time audio!");
+                return self;
+            }
+            momuInitialized = true;
+        }
+    }
 }
 
 - (void)dealloc {
@@ -103,29 +138,6 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     [super dealloc];
 }
 
-
-- (void) PlayRandomTone {
-    if (self.isPlaying) {
-        double timePassed_ms = [_date timeIntervalSinceNow] * -1000.0;
-        OSStatus result = AUGraphStop (_processingGraph);
-        NSAssert1(result == noErr, @"Error stopping AUGraph %ld", result);
-        self.playing = NO;
-        _amplitude = 0.0;
-        NSLog(@"Time Passed: %f",timePassed_ms);
-        dispatch_source_cancel(_volTimer);       
-    } else {
-        // Randomize frequency
-        _frequency = floorf(((double)arc4random() / ARC4RANDOM_MAX) * 900.0f) + 500.0f;
-        
-        // Start volume timer
-        //_volTimer = [self CreateDispatchTimer:1ull * NSEC_PER_MSEC withLeeway:1ull * NSEC_PER_MSEC  andQueue:dispatch_get_main_queue() andBlock:^{ [self increaseVolume]; }];
-        
-        OSStatus result = AUGraphStart(_processingGraph);
-        NSAssert1(result == noErr, @"Error starting AUGraph %ld", result);
-        self.playing = YES;
-        _date = [NSDate date];
-    }
-}
 
 - (void) Play {
     // init audio
@@ -157,6 +169,10 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     }
 }
 
+- (void) PlayBackgroundMusic {
+
+}
+
 - (void) AddTone:(int) frequency
        timeConst:(double) duration
         toneNum:(int) index
@@ -164,7 +180,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.sineWaves[index]->setFrequency(frequency);
     //audioData.sineWaves[index]->addPhaseOffset(index*15);
     audioData.myAsymp[index]->setTime(duration);
-    audioData.myAsymp[index]->setTarget(98.0/audioData.numAsteroids);
+    audioData.myAsymp[index]->setTarget(98.0);
 }
 
 - (NSNumber *) RemoveTone:(int) index

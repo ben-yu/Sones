@@ -8,7 +8,6 @@
 
 #import "MainMenuViewController.h"
 #import "RootViewController.h"
-#import "AudioGramViewController.h"
 
 @interface MainMenuViewController ()
 @property (nonatomic, retain) NSMutableArray *items;
@@ -28,7 +27,7 @@
     //or the recycling mechanism will destroy your data once
     //your item views move off-screen
     self.items = [NSMutableArray array];
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 1; i++)
     {
         [items addObject:[NSNumber numberWithInt:i]];
     }
@@ -56,9 +55,9 @@
     [myVolumeView release];
     
     UIFont *myFont = [UIFont fontWithName:@"Audiowide-Regular" size:40];
-    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(30,10, 2*self.view.frame.size.width/3, self.view.frame.size.height/6)];
+    UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(20,20, self.view.frame.size.height, self.view.frame.size.width/7)];
     titleLabel.font = myFont;
-    titleLabel.text = @"Sonence";
+    titleLabel.text = @"Sonic Intelligence";
     titleLabel.backgroundColor = [UIColor clearColor];
     titleLabel.textColor = [UIColor whiteColor];
     [self.view addSubview:titleLabel];
@@ -96,9 +95,9 @@
     //get item index for button
 	NSInteger index = [carousel indexOfItemViewOrSubview:sender];
     if (index == 1) {
-        _controller.accelEnable = 1;
+        _controller.gameType = 1;
     } else {
-        _controller.accelEnable = 0;
+        _controller.gameType = 0;
     }
     [self presentViewController:_controller animated:YES completion:NULL];
 }
@@ -109,8 +108,6 @@
 	{
         NSLog(@"Audiogram View");
         
-        AudiogramViewController *testVC = segue.destinationViewController;
-        testVC.managedObjectContext = self.managedObjectContext;
         NSLog(@"Current User: %@", self.managedObjectContext);
 	}
 }
@@ -132,10 +129,10 @@
         UIImage *image, *scaledImage;
 		//no button available to recycle, so create new one
         if (index != 2) {
-            image = [UIImage imageNamed:@"slice_0_0.png"];
+            image = [UIImage imageNamed:@"button.png"];
             scaledImage =
             [UIImage imageWithCGImage:[image CGImage]
-                                scale:0.5 orientation:UIImageOrientationUp];
+                                scale:3.0 orientation:UIImageOrientationUp];
         } else {
             image = [UIImage imageNamed:@"Icon-72.png"];
             scaledImage =
@@ -144,14 +141,14 @@
         }
 		button = [UIButton buttonWithType:UIButtonTypeCustom];
 		button.frame = CGRectMake(0.0f, 0.0f, scaledImage.size.width, scaledImage.size.height);
-		[button setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+		[button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
 		[button setBackgroundImage:scaledImage forState:UIControlStateNormal];
-		button.titleLabel.font = [button.titleLabel.font fontWithSize:50];
+		button.titleLabel.font = [button.titleLabel.font fontWithSize:20];
 		[button addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
 	}
     
 	//set button label
-	//[button setTitle:[NSString stringWithFormat:@"%i", index] forState:UIControlStateNormal];
+	[button setTitle:@"Start" forState:UIControlStateNormal];
     
 	return button;
 }
@@ -161,7 +158,6 @@
 
 - (void)buttonTapped:(UIButton *)sender
 {
-    
     [self goCocos2dx:sender];
 }
 

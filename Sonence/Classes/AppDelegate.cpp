@@ -3,13 +3,14 @@
 //  Sonence
 //
 //  Created by Benjamin Yu on 2012-10-14.
-//  Copyright __MyCompanyName__ 2012. All rights reserved.
+//  Copyright APL 2012. All rights reserved.
 //
 
 #include "AppDelegate.h"
 
 #include "cocos2d.h"
-#include "HelloWorldScene.h"
+#include "SpaceScene.h"
+#include "MainMenu.h"
 
 USING_NS_CC;
 
@@ -28,7 +29,7 @@ bool AppDelegate::initInstance() {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
         
 		// Initialize OpenGLView instance, that release by CCDirector when application terminate.
-		// The HelloWorld is designed as HVGA.
+		// The SpaceScene is designed as HVGA.
 		CCEGLView * pMainWnd = new CCEGLView();
 		CC_BREAK_IF(! pMainWnd
                     || ! pMainWnd->Create(TEXT("cocos2d: Hello World"), 480, 320));
@@ -41,7 +42,7 @@ bool AppDelegate::initInstance() {
 #endif  // CC_PLATFORM_IOS
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
         
-		// OpenGLView initialized in HelloWorld/android/jni/helloworld/main.cpp
+		// OpenGLView initialized in SpaceScene/android/jni/SpaceScene/main.cpp
 		// the default setting is to create a fullscreen view
 		// if you want to use auto-scale, please enable view->create(320,480) in main.cpp
 		// if the resources under '/sdcard" or other writeable path, set it.
@@ -52,13 +53,13 @@ bool AppDelegate::initInstance() {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WOPHONE)
         
 		// Initialize OpenGLView instance, that release by CCDirector when application terminate.
-		// The HelloWorld is designed as HVGA.
+		// The SpaceScene is designed as HVGA.
 		CCEGLView* pMainWnd = new CCEGLView(this);
 		CC_BREAK_IF(! pMainWnd || ! pMainWnd->Create(320,480, WM_WINDOW_ROTATE_MODE_CW));
         
 #ifndef _TRANZDA_VM_
 		// on wophone emulator, we copy resources files to Work7/NEWPLUS/TDA_DATA/Data/ folder instead of zip file
-		cocos2d::CCFileUtils::setResource("HelloWorld.zip");
+		cocos2d::CCFileUtils::setResource("SpaceScene.zip");
 #endif
         
 #endif  // CC_PLATFORM_WOPHONE
@@ -69,7 +70,7 @@ bool AppDelegate::initInstance() {
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_LINUX)
         
 		// Initialize OpenGLView instance, that release by CCDirector when application terminate.
-		// The HelloWorld is designed as HVGA.
+		// The SpaceScene is designed as HVGA.
 		CCEGLView * pMainWnd = new CCEGLView();
 		CC_BREAK_IF(! pMainWnd
                     || ! pMainWnd->Create("cocos2d: Hello World", 480, 320 ,480, 320));
@@ -99,7 +100,7 @@ bool AppDelegate::initInstance() {
 
 bool AppDelegate::applicationDidFinishLaunching()
 {
-    /*
+
     // initialize director
     CCDirector *pDirector = CCDirector::sharedDirector();
     pDirector->setOpenGLView(CCEGLView::sharedOpenGLView());
@@ -108,17 +109,22 @@ bool AppDelegate::applicationDidFinishLaunching()
     // pDirector->enableRetinaDisplay(true);
 
     // turn on display FPS
-    pDirector->setDisplayStats(true);
+    //pDirector->setDisplayStats(true);
 
     // set FPS. the default value is 1.0/60 if you don't call this
     pDirector->setAnimationInterval(1.0 / 60);
 
     // create a scene. it's an autorelease object
-    CCScene *pScene = HelloWorld::scene();
+    CCScene* pScene = MainMenu::create();
+    CCLayer* pLayer = new MainMenuLayer();
+    pLayer->autorelease();
+    pScene->addChild(pLayer);
+    
+    ((MainMenu *)pScene)->initAudio();
 
     // run
     pDirector->runWithScene(pScene);
-*/
+
     return true;
 }
 

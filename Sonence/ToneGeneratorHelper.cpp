@@ -11,6 +11,11 @@
 
 namespace iOSBridge{
     
+    ToneGeneratorHelper::ToneGeneratorHelper()
+    {
+        toneGenerator_objc = [[ToneGenerator_objc alloc] initWithBackground];
+    }
+    
     ToneGeneratorHelper::ToneGeneratorHelper(int numOfAsteroids)
     {
         toneGenerator_objc = [[ToneGenerator_objc alloc] init:numOfAsteroids];

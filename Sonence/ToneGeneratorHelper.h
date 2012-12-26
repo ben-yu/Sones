@@ -16,7 +16,7 @@ namespace iOSBridge{
     public:
         
         void* toneGenerator_objc;
-        
+        ToneGeneratorHelper(void);
         ToneGeneratorHelper(int numOfAsteroids);
         ~ToneGeneratorHelper();
         void ShowAlert();
