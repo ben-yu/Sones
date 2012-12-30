@@ -5,7 +5,12 @@
         <attribute name="session" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="volume" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
     </entity>
+    <entity name="User" syncable="YES">
+        <attribute name="playedTutorial" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="uuid" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
     <elements>
         <element name="TestData" positionX="160" positionY="192" width="128" height="90"/>
+        <element name="User" positionX="160" positionY="192" width="128" height="75"/>
     </elements>
 </model>

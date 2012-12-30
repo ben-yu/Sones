@@ -11,9 +11,7 @@
 #import "EAGLView.h"
 #import "AppDelegate.h"
 #import <CoreData/CoreData.h>
-
 #import "RootViewController.h"
-#import "MainMenuViewController.h"
 
 @implementation AppController
 

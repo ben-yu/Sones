@@ -15,18 +15,8 @@ bool SpaceSceneLayer::accelEnable;
 
 SpaceSceneLayer::SpaceSceneLayer(void)
 {
-}
-
-SpaceSceneLayer::~SpaceSceneLayer(void)
-{
-}
-
-// on "init" you need to initialize your instance
-void SpaceSceneLayer::onEnter()
-{
     //////////////////////////////
     // 1. super init first
-    CCLayer::onEnter();
     
     // Get window sizes from director
     winWidth = CCDirector::sharedDirector()->getWinSize().height;
@@ -233,18 +223,10 @@ void SpaceSceneLayer::onEnter()
     txtWindow = CCSprite::create("futureui1.png");
     healthBar = CCSprite::create("health.png");
     txtWindow->setScale(0.27);
-    if (sysVer < 0.0) {
-        txtWindow->setRotation(90.0f);
-        healthBar->setRotation(90.0f);
-        hpBar->setRotation(90.0f);
-        txtWindow->setPosition(ccp(winWidth*0.1,winHeight*0.76));
-        healthBar->setPosition(ccp(winWidth*0.25,winHeight*0.85));
-        hpBar->setPosition(ccp(winWidth*0.24,winHeight*0.85));
-    }else {
-        txtWindow->setPosition(ccp(winHeight*0.23,winWidth*0.1));
-        healthBar->setPosition(ccp(winHeight*0.13,winWidth*0.25));
-        hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.24));
-    }
+
+    txtWindow->setPosition(ccp(winHeight*0.23,winWidth*0.1));
+    healthBar->setPosition(ccp(winHeight*0.13,winWidth*0.25));
+    hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.24));
     hpBar->setScaleX(0.9);
     hpBar->setScaleY(0.25);
     addChild(txtWindow);
@@ -287,19 +269,31 @@ void SpaceSceneLayer::onEnter()
         _spawnQueue->addObject(CCInteger::create(i));
         
     }
+}
+
+SpaceSceneLayer::~SpaceSceneLayer(void)
+{
+}
+
+void SpaceSceneLayer::onEnter()
+{
+    CCLayer::onEnter();
     
-    this->scheduleOnce(schedule_selector(SpaceSceneLayer::playTutorial), 2.0);
-    this->scheduleOnce(schedule_selector(SpaceSceneLayer::endTutorial), 35.0);
+    this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator();
+    this->toneGenHelp->playBackgroundMusic("main_background.wav");
     this->setTouchEnabled(true); // Enable Touch
     this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
     
     this->scheduleUpdate(); // Start updating
-    this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator(); // Start MOMU
     dataStoreHandler = new iOSBridge::DataStore();
     seed_freq = floorf(randomValueBetween(250.0,300.0));
     
     tutorialDuration = 10 * 1000.0;
-    playedTutorial = false;
+    playedTutorial = true;
+    if (!playedTutorial) {
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::playTutorial), 2.0);
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::endTutorial), 35.0);
+    }
     initTime = getTimeTick();
     
     _nextAsteroid = 0;
@@ -314,17 +308,14 @@ void SpaceSceneLayer::update(float dt) {
     
     if (_health <= 0 && !gameOver) {
         gameOver = true;
-        tutorialText = CCLabelTTF::create("", "Audiowide-Regular", 30.0);
-
-        stringstream tempString;
-        tempString<<"GAME OVER!";
-        tutorialText->setString(tempString.str().c_str());
-        tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
-        
+        tutorialText = CCLabelTTF::create("GAME OVER!", "Audiowide-Regular", 30.0);
+        tutorialText->setPosition(ccp(winHeight/2, winWidth/2));
         tutorialText->setVisible(true);
-        tutorialText->setOpacity(1.0);;
+        tutorialText->setOpacity(255);
+        addChild(tutorialText);
+        
         runAction(CCWaves3D::create(5, 40, ccg(15,10), 10));
-        this->scheduleOnce(schedule_selector(SpaceSceneLayer::menuCloseCallback), 15.0);
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::menuCloseCallback), 8.0);
     }
     
     //////////////////////////////
@@ -334,60 +325,37 @@ void SpaceSceneLayer::update(float dt) {
     //////////////////////////////
     
     CCPoint backgroundScrollVert;
-    if (sysVer < 0.0) {
-        backgroundScrollVert = ccp(-500,0) ;
-    } else {
-        backgroundScrollVert = ccp(0,-500) ;
-    }
+    backgroundScrollVert = ccp(0,-500 - floor(distance/10.0));
     _backgroundNode->setPosition(ccpAdd(_backgroundNode->getPosition(),ccpMult(backgroundScrollVert,dt)));
     
-    CCArray *spaceDusts = CCArray::arrayWithCapacity(2) ;
-    spaceDusts->addObject(_spacedust1) ;
-    spaceDusts->addObject(_spacedust2) ;
-    if (sysVer < 0.0) {
-        for ( int ii = 0  ; ii < spaceDusts->count() ; ii++ ) {
-            CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
-            float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).x  ;
-            float size = spaceDust->getContentSize().width ;
-            if ( xPosition < -size/2) {
-                _backgroundNode->incrementOffset(ccp(2*spaceDust->getContentSize().width-20.0,0),spaceDust) ;
-            }
-        }
-    } else {
-        for ( int ii = 0  ; ii < spaceDusts->count() ; ii++ ) {
-            CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
-            float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).y  ;
-            float size = spaceDust->getContentSize().width ;
-            if ( xPosition < -size/2) {
-                _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().width-20.0),spaceDust) ;
-            }
+    CCArray *spaceDusts = CCArray::createWithCapacity(2) ;
+    spaceDusts->addObject(_spacedust1);
+    spaceDusts->addObject(_spacedust2);
+
+    for ( int ii = 0  ; ii < spaceDusts->count() ; ii++ ) {
+        CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
+        float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).y;
+        float size = spaceDust->getContentSize().width ;
+        if ( xPosition < -size/2) {
+            _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().width-20.0),spaceDust) ;
         }
     }
     
-    CCArray *backGrounds = CCArray::arrayWithCapacity(4) ;
-    backGrounds->addObject(_galaxy) ;
-    backGrounds->addObject(_planetsunrise) ;
-    backGrounds->addObject(_spacialanomaly) ;
-    backGrounds->addObject(_spacialanomaly2) ;
-    if (sysVer < 0.0) {
-        for ( int ii = 0 ; ii <backGrounds->count() ; ii++ ) {
-            CCSprite * background = (CCSprite *)(backGrounds->objectAtIndex(ii)) ;
-            float xPosition = _backgroundNode->convertToWorldSpace(background->getPosition()).x ;
-            float size = background->getContentSize().width ;
-            if ( xPosition < -size/2) {
-                _backgroundNode->incrementOffset(ccp(2*winWidth + background->getContentSize().width,0),background) ;
-            }
-        }
-    } else {
-        for ( int ii = 0 ; ii <backGrounds->count() ; ii++ ) {
-            CCSprite * background = (CCSprite *)(backGrounds->objectAtIndex(ii)) ;
-            float xPosition = _backgroundNode->convertToWorldSpace(background->getPosition()).y ;
-            float size = background->getContentSize().width ;
-            if ( xPosition < -size/2) {
-                _backgroundNode->incrementOffset(ccp(0,2*winWidth + background->getContentSize().width),background) ;
-            }
+    CCArray *backGrounds = CCArray::createWithCapacity(4);
+    backGrounds->addObject(_galaxy);
+    backGrounds->addObject(_planetsunrise);
+    backGrounds->addObject(_spacialanomaly);
+    backGrounds->addObject(_spacialanomaly2);
+
+    for ( int ii = 0 ; ii <backGrounds->count() ; ii++ ) {
+        CCSprite * background = (CCSprite *)(backGrounds->objectAtIndex(ii)) ;
+        float xPosition = _backgroundNode->convertToWorldSpace(background->getPosition()).y ;
+        float size = background->getContentSize().width;
+        if ( xPosition < -size/2) {
+            _backgroundNode->incrementOffset(ccp(0,2*winWidth + background->getContentSize().width),background);
         }
     }
+    
     
     //////////////////////////////
     //
@@ -426,16 +394,15 @@ void SpaceSceneLayer::update(float dt) {
             CCSprite *shipLaser = (CCSprite *) itLaser;
             if ( ! shipLaser->isVisible() )
                 continue ;
-            if ( CCRect::CCRectIntersectsRect(shipLaser->boundingBox(), asteroid->boundingBox()) ) {
+            if ( shipLaser->boundingBox().intersectsRect(asteroid->boundingBox()) ) {
                 shipLaser->setVisible(false);
                 asteroid->setVisible(false);
                 setAsteroidInvisible(asteroid);
-                //runAction(CCWaves3D::create(5, 40, ccg(15,10), 3));
                 _backgroundNode->removeChild(asteroid, 1);
                 continue ;
             }
         }
-        if ( CCRect::CCRectIntersectsRect(playerShip->boundingBox(), asteroid->boundingBox()) ) {
+        if ( playerShip->boundingBox().intersectsRect(asteroid->boundingBox()) ) {
             asteroid->setVisible(false);
             setAsteroidInvisible(asteroid);
             score += 1;
@@ -452,23 +419,23 @@ void SpaceSceneLayer::update(float dt) {
             CCSprite *shipLaser = (CCSprite *) itEnemy;
             if ( ! shipLaser->isVisible() )
                 continue ;
-            if ( CCRect::CCRectIntersectsRect(shipLaser->boundingBox(), enemy->boundingBox()) ) {
+            if (shipLaser->boundingBox().intersectsRect(enemy->boundingBox())) {
                 shipLaser->setVisible(false);
                 enemy->setVisible(false);
                 setEnemyInvisible(enemy);
                 _backgroundNode->removeChild(enemy, 1);
-                float tmpVol = toneGenHelp->removeTone(index);
+                toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
                 //dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
                 continue ;
             }
         }
-        if ( CCRect::CCRectIntersectsRect(playerShip->boundingBox(), enemy->boundingBox()) ) {
+        if (playerShip->boundingBox().intersectsRect(enemy->boundingBox())) {
             enemy->setVisible(false);
             setEnemyInvisible(enemy);
             _backgroundNode->removeChild(enemy, 1);
-            float tmpVol = toneGenHelp->removeTone(index);
+            toneGenHelp->removeTone(index);
             playerShip->runAction( CCBlink::create(1.0, 5));
             alphaTargets[index] = 0.0;
             enemySpawned = false;
@@ -487,7 +454,9 @@ void SpaceSceneLayer::update(float dt) {
     newY = MIN(MAX(newY, minY), maxY);
     playerShip->setPosition(ccp(playerShip->getPosition().x, newY));
     
-    distance++;
+    if (playedTutorial) {
+        distance++;
+    }
     stringstream tempString;
     tempString<<distance<<"m";
     distLabel->setString(tempString.str().c_str());
@@ -540,7 +509,22 @@ void SpaceSceneLayer::draw(){
     ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.6));
     ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.7));
     ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.7));
-
+    
+    int i, n = 120;
+    float da, ga, a, b;
+    float radius = 40;
+    int dt = distance % n;
+    const float TWOPI = 3.1415926535 * 2.0;
+    
+    da = TWOPI / (float)n;
+    
+    for (i = 0 + dt; i < n + dt; i++)  {
+        a = (float)i * da;
+        b = a + da;
+        ga = 0.90 * (float)(i) / (float)n;
+        CCPoint filledVertices[] = { playerShip->getPosition(), ccpAdd(playerShip->getPosition(),ccp(radius * cos(a), radius * sin(a))), ccpAdd(playerShip->getPosition(),ccp(radius * cos(b), radius * sin(b)))};
+        ccDrawSolidPoly(filledVertices, 3, ccc4f(0.0,ga, 0.0, ga/3));
+    }
 }
 
 void SpaceSceneLayer::playTutorial()
@@ -589,17 +573,18 @@ void SpaceSceneLayer::endTutorial()
 
 void SpaceSceneLayer::spawnEnemy()
 {
-    double randDuration = randomValueBetweenD(8.0,9.0);
+    double randDuration = 17.0;
     int multiple = (int) floorf(randomValueBetweenD(1.0,11.0)); // Only generate harmonic pure-tones
     float randFrequency = multiple * seed_freq;
     float randY = winHeight/10 * (multiple-1);
-    float randAsteroidPos = randomValueBetween(0.0,winWidth);
+    
+    float visibleDelay = 10.0;
     
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
     enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, 0.05, 0); // Add pure-tone
+    toneGenHelp->addTone(randFrequency, 10.0, 0); // Add pure-tone
     
     enemy->stopAllActions();
     CCAnimation *normal = animCache->animationByName("enemy");
@@ -607,14 +592,14 @@ void SpaceSceneLayer::spawnEnemy()
     CCAnimate *animN = CCAnimate::create(normal);
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     
-    CCDelayTime *fadeDelay = CCDelayTime::create(3.0);
-    CCFadeIn *fade = CCFadeIn::create(randDuration-3.0);
+    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay);
+    CCFadeIn *fade = CCFadeIn::create(0.01);
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
 
     timeTargets[_nextAsteroid] = randDuration;
 
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                      playerShip->getPosition()),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
+    //CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
     enemy->setPosition( ccp(randY,winWidth+enemy->getContentSize().width/2));
     enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
     enemy->runAction (moveSeq);
@@ -629,13 +614,12 @@ void SpaceSceneLayer::spawnEnemyAtLoc(float y)
     int multiple = y; // Only generate harmonic pure-tones
     float randFrequency = multiple * seed_freq;
     float randY = y * winHeight/10;
-    float randAsteroidPos = randomValueBetween(0.0,winWidth);
     
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
     enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, 0.06, 0); // Add pure-tone
+    toneGenHelp->addTone(randFrequency, randDuration, 0); // Add pure-tone
     
     enemy->stopAllActions();
     CCAnimation *normal = animCache->animationByName("enemy");
@@ -828,18 +812,24 @@ void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
 void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
 {
     CCScene* pScene = MainMenu::create();
-    CCLayer* pLayer = new MainMenuLayer();
+    CCLayer* pLayer1 = new MainMenuLayer();
+    CCLayer* pLayer2 = new OptionsLayer();
+    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer4 = new CreditsLayer();
     
-    toneGenHelp->stop();
+    
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    pScene->addChild(layer, 0);
+    
+    pLayer1->release();
+    pLayer2->release();
+    pLayer3->release();
+    pLayer4->release();
+    
+    toneGenHelp->removeTone(0);
+    toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
-    
-    pScene->addChild(pLayer);
     CCDirector::sharedDirector()->replaceScene(pScene);
-}
-
-SpaceScene::SpaceScene()
-{
-    CCScene::init();
 }
 
 iOSBridge::ToneGeneratorHelper* SpaceScene::getToneGenerator()
@@ -861,9 +851,9 @@ void SpaceScene::runGame()
     CCDirector::sharedDirector()->replaceScene((CCScene *)this);
 }
 
-void SpaceScene::onEnter()
+SpaceScene::SpaceScene()
 {
-    CCScene::onEnter();
+    CCScene::init();
         
     //add the menu item for back to main menu
     //#if (CC_TARGET_PLATFORM == CC_PLATFORM_MARMALADE)
@@ -883,13 +873,23 @@ void SpaceScene::onEnter()
 
 void SpaceScene::MainMenuCallback(CCObject* pSender)
 {
-    CCScene* pScene = CCScene::create();
-    CCLayer* pLayer = new MainMenuLayer();
-    pLayer->autorelease();
+    CCScene* pScene = MainMenu::create();
+    CCLayer* pLayer1 = new MainMenuLayer();
+    CCLayer* pLayer2 = new OptionsLayer();
+    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer4 = new CreditsLayer();
+    
+    
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    pScene->addChild(layer, 0);
+    
+    pLayer1->release();
+    pLayer2->release();
+    pLayer3->release();
+    pLayer4->release();
     
     toneGenHelp->removeTone(0);
+    toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
-    
-    pScene->addChild(pLayer);
     CCDirector::sharedDirector()->replaceScene(pScene);
 }

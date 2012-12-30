@@ -13,7 +13,7 @@ namespace iOSBridge{
     
     ToneGeneratorHelper::ToneGeneratorHelper()
     {
-        toneGenerator_objc = [[ToneGenerator_objc alloc] initWithBackground];
+        toneGenerator_objc = [[ToneGenerator_objc alloc] initWithBackground:@"echelon.wav"];
     }
     
     ToneGeneratorHelper::ToneGeneratorHelper(int numOfAsteroids)
@@ -24,35 +24,45 @@ namespace iOSBridge{
     ToneGeneratorHelper::~ToneGeneratorHelper(void)
     {
     }
-    
-    void ToneGeneratorHelper::ShowAlert()
-    {
-        [ToneGenerator_objc  ShowAlert];
-    }
-    
+        
     void ToneGeneratorHelper::playRandomTone()
     {
-        [toneGenerator_objc  Play];
+        [((ToneGenerator_objc *)toneGenerator_objc)  Play];
     }
     
     void ToneGeneratorHelper::addTone(float frequency, double duration, int index)
     {
-        [toneGenerator_objc  AddTone: (int) floorf(frequency) timeConst:(double) duration toneNum:index];
+        [((ToneGenerator_objc *)toneGenerator_objc)   AddTone: (int) floorf(frequency) timeConst:(double) duration toneNum:index];
     }
     
     float ToneGeneratorHelper::removeTone(int index)
     {
-        return [[toneGenerator_objc  RemoveTone:index] floatValue];
+        return [[((ToneGenerator_objc *)toneGenerator_objc)   RemoveTone:index] floatValue];
     }
     
     void ToneGeneratorHelper::play()
     {
-        [toneGenerator_objc  Play];
+        [((ToneGenerator_objc *)toneGenerator_objc)   Play];
+    }
+    
+    void ToneGeneratorHelper::playBackgroundMusic(std::string fileName)
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   playBackgroundMusic:[NSString stringWithUTF8String:fileName.c_str()]];
+    }
+    
+    void ToneGeneratorHelper::enableBackground()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   enableBackground];
+    }
+    
+    void ToneGeneratorHelper::disableBackground()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   disableBackground];
     }
     
     void ToneGeneratorHelper::stop()
     {
-        [toneGenerator_objc  Stop];
+        [((ToneGenerator_objc *)toneGenerator_objc)   Stop];
     }
     
 }

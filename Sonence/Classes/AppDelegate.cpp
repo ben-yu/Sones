@@ -116,9 +116,19 @@ bool AppDelegate::applicationDidFinishLaunching()
 
     // create a scene. it's an autorelease object
     CCScene* pScene = MainMenu::create();
-    CCLayer* pLayer = new MainMenuLayer();
-    pLayer->autorelease();
-    pScene->addChild(pLayer);
+    CCLayer* pLayer1 = new MainMenuLayer();
+    CCLayer* pLayer2 = new OptionsLayer();
+    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer4 = new CreditsLayer();
+    
+    
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    pScene->addChild(layer, 0);
+    
+    pLayer1->release();
+    pLayer2->release();
+    pLayer3->release();
+    pLayer4->release();
     
     ((MainMenu *)pScene)->initAudio();
 

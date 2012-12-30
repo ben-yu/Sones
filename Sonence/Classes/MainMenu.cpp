@@ -11,9 +11,14 @@
 
 #define LINE_SPACE          40
 
-void MainMenuLayer::onEnter()
+//------------------------------------------------------------------
+//
+// MainMenuLayer
+//
+//------------------------------------------------------------------
+
+MainMenuLayer::MainMenuLayer()
 {
-    CCLayer::onEnter();
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
     CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", 30);
@@ -25,7 +30,7 @@ void MainMenuLayer::onEnter()
     CCLabelTTF* label = CCLabelTTF::create("New Game", "Ubuntu-Regular", 14);
     CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(MainMenuLayer::startGameCallback));
     CCLabelTTF* optionLabel = CCLabelTTF::create("Options", "Ubuntu-Regular", 14);
-    CCMenuItemLabel* optionMenuItem = CCMenuItemLabel::create(optionLabel, this, menu_selector(MainMenuLayer::startGameCallback));
+    CCMenuItemLabel* optionMenuItem = CCMenuItemLabel::create(optionLabel, this, menu_selector(MainMenuLayer::optionsCallback));
     CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", 14);
     CCMenuItemLabel* statsMenuItem = CCMenuItemLabel::create(statsLabel, this, menu_selector(MainMenuLayer::startGameCallback));
     CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", 14);
@@ -62,6 +67,10 @@ void MainMenuLayer::draw(){
     
 }
 
+void MainMenuLayer::optionsCallback(CCObject* pSender){
+    ((CCLayerMultiplex*)m_pParent)->switchTo(1);
+}
+
 
 void MainMenuLayer::startGameCallback(CCObject* pSender)
 {
@@ -69,13 +78,157 @@ void MainMenuLayer::startGameCallback(CCObject* pSender)
     //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
     
     SpaceScene* pScene =  new SpaceScene();
-    pScene->setToneGenerator(((MainMenu *)this->getParent())->getToneGenerator());
+    pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
     if (pScene)
     {
         pScene->runGame();
         pScene->release();
     }
 }
+
+//------------------------------------------------------------------
+//
+// OptionsLayer
+//
+//------------------------------------------------------------------
+
+OptionsLayer::OptionsLayer()
+{
+    CCMenuItemFont::setFontName("PressStart2P-Regular");
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont*title1 = CCMenuItemFont::create("Effects");
+    title1->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle* item1 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(OptionsLayer::fxCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont* title2 = CCMenuItemFont::create( "Music" );
+    title2->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle *item2 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(OptionsLayer::musicCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont* title3 = CCMenuItemFont::create( "Quality" );
+    title3->setEnabled( false );
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle *item3 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(OptionsLayer::qualityCallback),
+                                                                 CCMenuItemFont::create( "High" ),
+                                                                 CCMenuItemFont::create( "Low" ),
+                                                                 NULL );
+    
+    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont* title4 = CCMenuItemFont::create( "Sensitivity" );
+    title4->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle *item4 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(OptionsLayer::sensitivityCallback),
+                                                                 CCMenuItemFont::create( "Off" ),
+                                                                 NULL );
+    
+    //UxArray* more_items = UxArray::arrayWithObjects(
+    //                                                 CCMenuItemFont::create( "33%" ),
+    //                                                 CCMenuItemFont::create( "66%" ),
+    //                                                 CCMenuItemFont::create( "100%" ),
+    //                                                 NULL );
+    // TIP: you can manipulate the items like any other CCMutableArray
+    item4->getSubItems()->addObject( CCMenuItemFont::create( "33%" ) );
+    item4->getSubItems()->addObject( CCMenuItemFont::create( "66%" ) );
+    item4->getSubItems()->addObject( CCMenuItemFont::create( "100%" ) );
+    
+    // you can change the one of the items by doing this
+    item4->setSelectedIndex( 2 );
+    
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize( 34 );
+    
+    CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
+    CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(OptionsLayer::backCallback) );
+    
+    CCMenu *menu = CCMenu::create(
+                                  title1, title2,
+                                  item1, item2,
+                                  title3, title4,
+                                  item3, item4,
+                                  back, NULL ); // 9 items.
+    
+    menu->alignItemsInColumns(2, 2, 2, 2, 1, NULL);
+    
+    addChild( menu );
+    
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    menu->setPosition(ccp(s.width/2, s.height/2));
+}
+
+void OptionsLayer::musicCallback(CCObject* sender)
+{
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        (((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator())->disableBackground();
+    } else {
+        (((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator())->enableBackground();
+    }
+}
+
+void OptionsLayer::qualityCallback(CCObject* sender)
+{
+    std::cout << "selected item: %x index:%d" << dynamic_cast<CCMenuItemToggle*>(sender)->selectedItem() << dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex();
+}
+
+void OptionsLayer::fxCallback(CCObject* sender)
+{
+    std::cout << "selected item: %x index:%d" << dynamic_cast<CCMenuItemToggle*>(sender)->selectedItem() << dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex();
+}
+
+void OptionsLayer::sensitivityCallback(CCObject* sender)
+{
+    std::cout << "selected item: %x index:%d" << dynamic_cast<CCMenuItemToggle*>(sender)->selectedItem() << dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex();
+}
+
+
+void OptionsLayer::backCallback(CCObject* sender)
+{
+    ((CCLayerMultiplex*)m_pParent)->switchTo(0);
+}
+
+//------------------------------------------------------------------
+//
+// StatsLayer
+//
+//------------------------------------------------------------------
+void StatsLayer::onEnter()
+{
+    CCLayer::onEnter();
+}
+//------------------------------------------------------------------
+//
+// CreditsLayer
+//
+//------------------------------------------------------------------
+void CreditsLayer::onEnter()
+{
+    CCLayer::onEnter();
+}
+
+//------------------------------------------------------------------
+//
+// MainMenu
+//
+//------------------------------------------------------------------
 
 void MainMenu::runMainMenu()
 {

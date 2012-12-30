@@ -111,7 +111,7 @@ private:
     // Player Stats
     int score = 0;
     int distance = 0;
-    int _health = 100;
+    int _health = 10;
     
     float *alphaTargets;
     float *timeTargets;
@@ -141,16 +141,19 @@ class SpaceScene : public cocos2d::CCScene
 public:
     SpaceScene();
     virtual void runGame();
-    virtual void onEnter();
     
     // The CallBack for back to the main menu scene
     virtual void MainMenuCallback(CCObject* pSender);
     
     iOSBridge::ToneGeneratorHelper* getToneGenerator(void);
     void setToneGenerator(iOSBridge::ToneGeneratorHelper *);
+    
+    iOSBridge::DataStore* getDataStore(void);
+    void setDataStore(iOSBridge::DataStore *);
 private:
     CCScene* mainMenuPtr;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
+    iOSBridge::DataStore *dataStoreHandler;
 };
 
 #endif // __SpaceScene_SCENE_H__

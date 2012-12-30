@@ -21,11 +21,50 @@ USING_NS_CC;
 class MainMenuLayer : public CCLayer
 {
 public:
-    virtual void onEnter();
+    MainMenuLayer();
     virtual void startGameCallback(CCObject* pSender);
     virtual void draw();
     
+    void optionsCallback(CCObject* pSender);
+    
     CREATE_FUNC(MainMenuLayer);
+private:
+    
+};
+
+class OptionsLayer : public CCLayer
+{
+public:
+    OptionsLayer();
+    void backCallback(CCObject* sender);
+    void menuCallback(CCObject* sender);
+    void musicCallback(CCObject* sender);
+    void fxCallback(CCObject* sender);
+    void sensitivityCallback(CCObject* sender);
+    void qualityCallback(CCObject* sender);
+    
+    
+    CREATE_FUNC(OptionsLayer);
+private:
+    
+};
+
+class StatsLayer : public CCLayer
+{
+public:
+    virtual void onEnter();
+
+    CREATE_FUNC(StatsLayer);
+private:
+    
+};
+
+class CreditsLayer : public CCLayer
+{
+public:
+    virtual void onEnter();
+    
+    CREATE_FUNC(CreditsLayer);
 private:
     
 };
@@ -39,9 +78,13 @@ public:
     
     iOSBridge::ToneGeneratorHelper* getToneGenerator(void);
     void setToneGenerator(iOSBridge::ToneGeneratorHelper *);
+    
+    iOSBridge::DataStore* getDataStore(void);
+    void setDataStore(iOSBridge::DataStore *);
 private:
     CCMenu* m_pItemMenu;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
+    iOSBridge::DataStore *dataStoreHandler;
 };
 
 #endif /* defined(__Sonence__MainMenu__) */

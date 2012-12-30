@@ -17,12 +17,6 @@
 #define DBOFFSET -74.0 
 
 @interface ToneGenerator_objc()
-@property AUGraph processingGraph;
-@property NSDate *date;
-@property AudioUnit ioUnit;
-//@property AudioUnit mixerUnit;
-@property dispatch_source_t volTimer;
-@property BOOL gameStarted;
 @end
 
 void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
@@ -31,13 +25,18 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     
     for(int i=0; i<framesize; i++)
     {
-        SAMPLE outz = data->backgroundMusic->tick();
-        //SAMPLE outz = 0.0;
+        SAMPLE outz;
+        if (data->backgroundEnabled) {
+            outz = data->backgroundMusic->tick();
+        } else {
+            outz = 0.0;
+        }
         for (int j=0; j < data->numAsteroids; j++) {
-            Float32 amp = data->myAsymp[j]->tick();
-            outz += ((Float32) (pow(10.0,(amp - 98.0)/20.0))) * data->sineWaves[j]->tick();
+            Float32 amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[j]->tick() - 98.0)/20.0)));
+            //Float32 amp = data->myAsymp[j]->tick();
+            outz += amp * data->sineWaves[j]->tick();
             //outz += data->myAsymp[j]->tick() * data->sineWaves[j]->tick();
-            //if (amp > 60.9)
+            //if (amp >= 1.0)
             //    NSLog(@"decibel level is %f", outz);
         }
         
@@ -46,20 +45,6 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 }
 
 @implementation ToneGenerator_objc
-
-@synthesize processingGraph = _processingGraph;
-@synthesize frequency = _frequency;
-@synthesize sampleRate = _sampleRate;
-@synthesize theta = _theta;
-@synthesize amplitude = _amplitude;
-@synthesize volume = _volume;
-@synthesize date = _date;
-@synthesize ioUnit = _ioUnit;
-@synthesize mixerUnit = _mixerUnit;
-@synthesize frequencies = _frequencies;
-@synthesize amplitudes = _amplitudes;
-@synthesize tmpbuffer = _tmpbuffer;
-@synthesize sineBuffer = _sineBuffer;
 @synthesize playing;
 
 - (id)init:(int) numOfAsteroids
@@ -69,7 +54,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
         audioData.numAsteroids = numOfAsteroids;
         audioData.myMandolin = new Mandolin(400);
         NSBundle *mainBundle = [NSBundle mainBundle];
-        NSString *myFile = [mainBundle pathForResource: @"background-music-aac" ofType: @"wav"];
+        NSString *myFile = [mainBundle pathForResource: @"echelon" ofType: @"wav"];
         audioData.backgroundMusic = new FileLoop(std::string([myFile UTF8String]));
         audioData.myAsymp = (Envelope **) calloc(sizeof(void *), numOfAsteroids);
         audioData.sineWaves = (BlitSaw **) calloc(sizeof(void *), numOfAsteroids);
@@ -104,7 +89,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     return self;
 }
 
-- (id)initWithBackground {
+- (id)initWithBackground:(NSString *) fileName {
     self = [super init];
     if (self) {
         audioData.backgroundMusic = new FileLoop("background-music-aac.wav");
@@ -130,10 +115,10 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
             momuInitialized = true;
         }
     }
+    return self;
 }
 
-- (void)dealloc {
-    AUGraphStop (_processingGraph);
+- (void) dealloc {
     AudioSessionSetActive(false);
     [super dealloc];
 }
@@ -169,18 +154,28 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     }
 }
 
-- (void) PlayBackgroundMusic {
+- (void) playBackgroundMusic:(NSString *) fileName {
+    NSBundle *mainBundle = [NSBundle mainBundle];
+    NSArray *components = [fileName componentsSeparatedByString:@"."];
+    NSString *myFile = [mainBundle pathForResource: [components objectAtIndex:0] ofType: [components objectAtIndex:1] ];
+    audioData.backgroundMusic = new FileLoop(std::string([myFile UTF8String]));
+}
 
+- (void) enableBackground {
+    audioData.backgroundEnabled = true;
+}
+
+- (void) disableBackground {
+    audioData.backgroundEnabled = false;
 }
 
 - (void) AddTone:(int) frequency
-       timeConst:(double) duration
-        toneNum:(int) index
+         timeConst:(double) duration
+         toneNum:(int) index
 {
     audioData.sineWaves[index]->setFrequency(frequency);
-    //audioData.sineWaves[index]->addPhaseOffset(index*15);
+    audioData.myAsymp[index]->setTarget(1.0);
     audioData.myAsymp[index]->setTime(duration);
-    audioData.myAsymp[index]->setTarget(98.0);
 }
 
 - (NSNumber *) RemoveTone:(int) index
@@ -193,6 +188,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     return tmp;
 }
 
+/*
 - (dispatch_source_t) CreateDispatchTimer:(uint64_t) interval
                                withLeeway:(uint64_t) leeway
                                  andQueue:(dispatch_queue_t) queue
@@ -208,5 +204,5 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     }
     return timer;
 }
-
+*/
 @end
