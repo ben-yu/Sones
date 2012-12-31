@@ -281,11 +281,11 @@ void SpaceSceneLayer::onEnter()
     
     this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator();
     this->toneGenHelp->playBackgroundMusic("main_background.wav");
+    this->dataStoreHandler = ((SpaceScene *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
     this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
     
     this->scheduleUpdate(); // Start updating
-    dataStoreHandler = new iOSBridge::DataStore();
     seed_freq = floorf(randomValueBetween(250.0,300.0));
     
     tutorialDuration = 10 * 1000.0;
@@ -424,10 +424,10 @@ void SpaceSceneLayer::update(float dt) {
                 enemy->setVisible(false);
                 setEnemyInvisible(enemy);
                 _backgroundNode->removeChild(enemy, 1);
-                toneGenHelp->removeTone(index);
+                float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
-                //dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
+                dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
                 continue ;
             }
         }
@@ -829,6 +829,7 @@ void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
     toneGenHelp->removeTone(0);
     toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
+    ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);
 }
 
@@ -840,6 +841,16 @@ iOSBridge::ToneGeneratorHelper* SpaceScene::getToneGenerator()
 void SpaceScene::setToneGenerator(iOSBridge::ToneGeneratorHelper * gen)
 {
     this->toneGenHelp = gen;
+}
+
+iOSBridge::DataStore* SpaceScene::getDataStore()
+{
+    return this->dataStoreHandler;
+}
+
+void SpaceScene::setDataStore(iOSBridge::DataStore * gen)
+{
+    this->dataStoreHandler = gen;
 }
 
 void SpaceScene::runGame()
@@ -891,5 +902,6 @@ void SpaceScene::MainMenuCallback(CCObject* pSender)
     toneGenHelp->removeTone(0);
     toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
+    ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);
 }

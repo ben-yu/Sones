@@ -7,11 +7,10 @@
 //
 
 #import "RootViewController.h"
+#import "EAGLView.h"
 
 #include "cocos2d.h"
-#import "EAGLView.h"
 #include "CCEGLView.h"
-
 #include "TestData.h"
 
 

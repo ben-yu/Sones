@@ -79,6 +79,7 @@ void MainMenuLayer::startGameCallback(CCObject* pSender)
     
     SpaceScene* pScene =  new SpaceScene();
     pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
+    pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
     if (pScene)
     {
         pScene->runGame();
@@ -249,9 +250,20 @@ void MainMenu::setToneGenerator(iOSBridge::ToneGeneratorHelper * gen)
     this->toneGenHelp = gen;
 }
 
+iOSBridge::DataStore* MainMenu::getDataStore()
+{
+    return this->dataStoreHandler;
+}
+
+void MainMenu::setDataStore(iOSBridge::DataStore * handler)
+{
+    this->dataStoreHandler = handler;
+}
+
 void MainMenu::initAudio()
 {
     toneGenHelp = new iOSBridge::ToneGeneratorHelper(1);
+    dataStoreHandler = new iOSBridge::DataStore();
 }
 
 void MainMenu::onEnter()

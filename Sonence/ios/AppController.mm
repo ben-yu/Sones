@@ -44,7 +44,7 @@ static AppDelegate s_sharedApplication;
     viewController = [[RootViewController alloc] initWithNibName:nil bundle:nil];
     viewController.wantsFullScreenLayout = YES;
     viewController.view = __glView;
-
+   
     // Set RootViewController to window
     if ( [[UIDevice currentDevice].systemVersion floatValue] < 6.0)
     {
@@ -61,11 +61,12 @@ static AppDelegate s_sharedApplication;
 
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
 
+    ((AppDelegate *)cocos2d::CCApplication::sharedApplication())->setRootVC(viewController);
+    
     cocos2d::CCApplication::sharedApplication()->run();
- /*
-    MainMenuViewController *controller = (MainMenuViewController *) self.window.rootViewController;
-    controller.managedObjectContext = self.managedObjectContext;
-   */ 
+
+    viewController.managedObjectContext = self.managedObjectContext;
+
     return YES;
 }
 

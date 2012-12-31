@@ -131,7 +131,8 @@ bool AppDelegate::applicationDidFinishLaunching()
     pLayer4->release();
     
     ((MainMenu *)pScene)->initAudio();
-
+    ((MainMenu *)pScene)->getDataStore()->rootVCPtr = rootVC;
+    
     // run
     pDirector->runWithScene(pScene);
 
@@ -154,4 +155,12 @@ void AppDelegate::applicationWillEnterForeground()
     
     // if you use SimpleAudioEngine, it must resume here
     // SimpleAudioEngine::sharedEngine()->resumeBackgroundMusic();
+}
+
+void* AppDelegate::getRootVC() {
+    return this->rootVC;
+}
+
+void AppDelegate::setRootVC(void* vc){
+    this->rootVC = vc;
 }

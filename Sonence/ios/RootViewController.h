@@ -23,4 +23,8 @@
 @property (nonatomic, retain) NSManagedObjectModel *managedObjectModel;
 @property (nonatomic, retain) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
+-(void)storeDataPoint:(NSString*) identifier
+           freqThresh:(double) freq
+            volThresh:(double) vol;
+
 @end

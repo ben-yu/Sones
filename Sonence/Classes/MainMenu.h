@@ -72,6 +72,7 @@ private:
 class MainMenu : public CCScene
 {   
 public:
+    virtual void init();
     virtual void onEnter();
     virtual void runMainMenu();
     void initAudio();
