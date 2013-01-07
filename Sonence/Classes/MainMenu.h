@@ -26,8 +26,30 @@ public:
     virtual void draw();
     
     void optionsCallback(CCObject* pSender);
+    void levelsCallback(CCObject* pSender);
+    void exitCallback(CCObject* pSender);
     
     CREATE_FUNC(MainMenuLayer);
+private:
+    
+};
+
+class LevelLayer : public CCLayer
+{
+public:
+    LevelLayer();
+    void backCallback(CCObject* sender);
+    void menuCallback(CCObject* sender);
+    void musicCallback(CCObject* sender);
+    void fxCallback(CCObject* sender);
+    void sensitivityCallback(CCObject* sender);
+    void qualityCallback(CCObject* sender);
+    
+    void startGameCallback(CCObject* sender);
+    void startAccelCallback(CCObject* sender);
+    
+    
+    CREATE_FUNC(LevelLayer);
 private:
     
 };
@@ -72,9 +94,10 @@ private:
 class MainMenu : public CCScene
 {   
 public:
-    virtual void init();
+    void* rootVC;
+    
     virtual void onEnter();
-    virtual void runMainMenu();
+    void runMainMenu();
     void initAudio();
     
     iOSBridge::ToneGeneratorHelper* getToneGenerator(void);
@@ -82,6 +105,8 @@ public:
     
     iOSBridge::DataStore* getDataStore(void);
     void setDataStore(iOSBridge::DataStore *);
+    
+    CREATE_FUNC(MainMenu);
 private:
     CCMenu* m_pItemMenu;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;

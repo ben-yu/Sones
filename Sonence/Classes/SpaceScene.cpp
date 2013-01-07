@@ -269,6 +269,8 @@ SpaceSceneLayer::SpaceSceneLayer(void)
         _spawnQueue->addObject(CCInteger::create(i));
         
     }
+    
+    float angleStep = tanhf((winWidth/2)/winHeight)/10;
 }
 
 SpaceSceneLayer::~SpaceSceneLayer(void)
@@ -283,7 +285,7 @@ void SpaceSceneLayer::onEnter()
     this->toneGenHelp->playBackgroundMusic("main_background.wav");
     this->dataStoreHandler = ((SpaceScene *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
-    this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
+    //this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
     
     this->scheduleUpdate(); // Start updating
     seed_freq = floorf(randomValueBetween(250.0,300.0));
@@ -428,6 +430,10 @@ void SpaceSceneLayer::update(float dt) {
                 score += 10;
                 enemySpawned = false;
                 dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
+                char json[100];
+                sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
+                //jsonDoc.Parse<0>(json);
+                cout << json;
                 continue ;
             }
         }
@@ -446,13 +452,13 @@ void SpaceSceneLayer::update(float dt) {
     }
     
     
-    float maxY = winSize.height - playerShip->getContentSize().height/2;
-    float minY = playerShip->getContentSize().height/2;
+    float maxY = winSize.width - playerShip->getContentSize().width/2;
+    float minY = playerShip->getContentSize().width/2;
     
     float diff = (_shipPointsPerSecY * dt) ;
-    float newY = playerShip->getPosition().y + diff;
+    float newY = playerShip->getPosition().x + diff;
     newY = MIN(MAX(newY, minY), maxY);
-    playerShip->setPosition(ccp(playerShip->getPosition().x, newY));
+    playerShip->setPosition(ccp(newY,playerShip->getPosition().y));
     
     if (playedTutorial) {
         distance++;
@@ -474,26 +480,12 @@ void SpaceSceneLayer::draw(){
     
     glLineWidth(2);
     ccDrawColor4F(0.0, 1.0, 0.0, 0.3);
-    ccDrawCircle( playerShip->getPosition(), 25, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 50, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 75, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 100, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 125, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 150, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 175, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 200, 0, 50, false);
-    ccDrawCircle( playerShip->getPosition(), 250, 0, 50, false);
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(9*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(8*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(7*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(6*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(5*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(4*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(3*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(2*winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight/10,winWidth));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth));
+    for (int i = 0; i < 10; i++) {
+        ccDrawCircle( playerShip->getPosition(), winWidth/10 * i, 0, 50, false);
+        ccDrawLine(playerShip->getPosition(), ccp(winHeight/10 * i,winWidth));
+
+    }
+
     ccDrawColor4F(0.5, 1.0, 0.5, 0.3);
     ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.1));
     ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.1));
@@ -578,10 +570,12 @@ void SpaceSceneLayer::spawnEnemy()
     float randFrequency = multiple * seed_freq;
     float randY = winHeight/10 * (multiple-1);
     
+//    float da = TWOPI / (float)n;
+    
     float visibleDelay = 10.0;
     
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
-    enemy->setOpacity(0);
+    //enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
     toneGenHelp->addTone(randFrequency, 10.0, 0); // Add pure-tone
@@ -604,7 +598,7 @@ void SpaceSceneLayer::spawnEnemy()
     enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
     enemy->runAction (moveSeq);
     enemy->runAction(seq);
-    enemy->runAction(fadeAnim);
+    //enemy->runAction(fadeAnim);
     enemy->setVisible(true);
 }
 
@@ -790,7 +784,7 @@ void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
     
     // Cocos2DX inverts X and Y accelerometer depending on device orientation
     // in landscape mode right x=-y and y=x !!! (Strange and confusing choice)
-    pAccelerationValue->x = pAccelerationValue->y ;
+    pAccelerationValue->x = pAccelerationValue->x ;
     rollingX = (pAccelerationValue->x * KFILTERINGFACTOR) + (rollingX * (1.0 - KFILTERINGFACTOR));
     float accelX = pAccelerationValue->x - rollingX ;
     CCSize winSize = CCDirector::sharedDirector()->getWinSize();
@@ -856,6 +850,16 @@ void SpaceScene::setDataStore(iOSBridge::DataStore * gen)
 void SpaceScene::runGame()
 {
     CCLayer* pLayer = new SpaceSceneLayer();
+    
+    switch (gameMode) {
+        case 1:
+            ((SpaceSceneLayer *) pLayer)->setAccelerometerEnabled(true);
+            break;
+            
+        default:
+            break;
+    }
+    
     addChild(pLayer);
     pLayer->autorelease();
     
@@ -882,25 +886,140 @@ SpaceScene::SpaceScene()
     addChild(pMenu, 1);
 }
 
+static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp)
+{
+    struct WriteThis *pooh = (struct WriteThis *)userp;
+    
+    if(size*nmemb < 1)
+        return 0;
+    
+    if(pooh->sizeleft) {
+        *(char *)ptr = pooh->readptr[0]; /* copy one single byte */
+        cout << pooh->readptr[0];
+        pooh->readptr++;                 /* advance pointer */
+        pooh->sizeleft--;                /* less data left */
+        return 1;                        /* we return 1 byte at a time! */
+    }
+    
+    return 0;                          /* no more data left to deliver */
+}
+
+int SpaceScene::sendData()
+{
+    CURL *curl;
+    CURLcode res;
+    
+    struct WriteThis pooh;
+    
+    char json[100];
+    sprintf(json, "{\"data_point\":{\"uuid\":\"%d\",\"freq\":\"%f\",\"game_type\":\"normal\",\"vol:\"%f\"}}",12345,1000.0,1.0);
+    cout << "\n\n" << json << "\n\n";
+    pooh.readptr =  curl_easy_escape(curl, json, strlen(json));
+    pooh.sizeleft = (long)strlen(json);
+    
+    
+    /* In windows, this will init the winsock stuff */
+    res = curl_global_init(CURL_GLOBAL_DEFAULT);
+    /* Check for errors */
+    if(res != CURLE_OK) {
+        fprintf(stderr, "curl_global_init() failed: %s\n",
+                curl_easy_strerror(res));
+        return 1;
+    }
+    
+    /* get a curl handle */
+    curl = curl_easy_init();
+    if(curl) {
+        /* First set the URL that is about to receive our POST. */
+        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:5000/data_points.json");
+        
+        /* Now specify we want to POST data */
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        
+        /* we want to use our own read function */
+        curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback);
+        
+        /* pointer to pass to our read function */
+        curl_easy_setopt(curl, CURLOPT_READDATA, &pooh);
+                
+        /* get verbose debug output please */
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        
+        /*
+         If you use POST to a HTTP 1.1 server, you can send data without knowing
+         the size before starting the POST if you use chunked encoding. You
+         enable this by adding a header like "Transfer-Encoding: chunked" with
+         CURLOPT_HTTPHEADER. With HTTP 1.0 or without chunked transfer, you must
+         specify the size in the request.
+         */
+#ifdef USE_CHUNKED
+        {
+            struct curl_slist *chunk = NULL;
+            
+            chunk = curl_slist_append(chunk, "Transfer-Encoding: chunked");
+            res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+            /* use curl_slist_free_all() after the *perform() call to free this
+             list again */
+        }
+#else
+        /* Set the expected POST size. If you want to POST large amounts of data,
+         consider CURLOPT_POSTFIELDSIZE_LARGE */
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, pooh.sizeleft);
+#endif
+        
+#ifdef DISABLE_EXPECT
+        /*
+         Using POST with HTTP 1.1 implies the use of a "Expect: 100-continue"
+         header.  You can disable this header with CURLOPT_HTTPHEADER as usual.
+         NOTE: if you want chunked transfer too, you need to combine these two
+         since you can only set one list of headers with CURLOPT_HTTPHEADER. */
+        
+        /* A less good option would be to enforce HTTP 1.0, but that might also
+         have other implications. */
+        {
+            struct curl_slist *chunk = NULL;
+            
+            chunk = curl_slist_append(chunk, "Expect:");
+            res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+            /* use curl_slist_free_all() after the *perform() call to free this
+             list again */
+        }
+#endif
+        /* Perform the request, res will get the return code */
+        res = curl_easy_perform(curl);
+        /* Check for errors */ 
+        if(res != CURLE_OK)
+            fprintf(stderr, "curl_easy_perform() failed: %s\n",
+                    curl_easy_strerror(res));
+        
+        /* always cleanup */ 
+        curl_easy_cleanup(curl);
+    }
+    curl_global_cleanup();
+    return 0;
+}
+
 void SpaceScene::MainMenuCallback(CCObject* pSender)
 {
+    sendData();
+    
     CCScene* pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
     CCLayer* pLayer3 = new StatsLayer();
     CCLayer* pLayer4 = new CreditsLayer();
+    CCLayer* pLayer5 = new LevelLayer();
     
     
-    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
     pScene->addChild(layer, 0);
     
     pLayer1->release();
     pLayer2->release();
     pLayer3->release();
     pLayer4->release();
+    pLayer5->release();
     
-    toneGenHelp->removeTone(0);
-    toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);

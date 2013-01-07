@@ -60,10 +60,10 @@ static AppDelegate s_sharedApplication;
     [window makeKeyAndVisible];
 
     [[UIApplication sharedApplication] setStatusBarHidden: YES];
-
-    ((AppDelegate *)cocos2d::CCApplication::sharedApplication())->setRootVC(viewController);
     
     cocos2d::CCApplication::sharedApplication()->run();
+    
+    ((AppDelegate *)cocos2d::CCApplication::sharedApplication())->setRootVC(viewController);
 
     viewController.managedObjectContext = self.managedObjectContext;
 

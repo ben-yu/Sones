@@ -28,7 +28,7 @@ MainMenuLayer::MainMenuLayer()
     selectedText->setPosition(ccp(s.width * 0.7 ,s.height * 0.75));
     
     CCLabelTTF* label = CCLabelTTF::create("New Game", "Ubuntu-Regular", 14);
-    CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(MainMenuLayer::startGameCallback));
+    CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(MainMenuLayer::levelsCallback));
     CCLabelTTF* optionLabel = CCLabelTTF::create("Options", "Ubuntu-Regular", 14);
     CCMenuItemLabel* optionMenuItem = CCMenuItemLabel::create(optionLabel, this, menu_selector(MainMenuLayer::optionsCallback));
     CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", 14);
@@ -36,7 +36,7 @@ MainMenuLayer::MainMenuLayer()
     CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", 14);
     CCMenuItemLabel* creditsMenuItem = CCMenuItemLabel::create(creditsLabel, this, menu_selector(MainMenuLayer::startGameCallback));
     CCLabelTTF* exitLabel = CCLabelTTF::create("Exit", "Ubuntu-Regular", 14);
-    CCMenuItemLabel* exitMenuItem = CCMenuItemLabel::create(exitLabel, this, menu_selector(MainMenuLayer::startGameCallback));
+    CCMenuItemLabel* exitMenuItem = CCMenuItemLabel::create(exitLabel, this, menu_selector(MainMenuLayer::exitCallback));
     
     CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
     pMenu->addChild(optionMenuItem);pMenu->addChild(statsMenuItem);pMenu->addChild(creditsMenuItem);pMenu->addChild(exitMenuItem);
@@ -54,6 +54,8 @@ MainMenuLayer::MainMenuLayer()
 void MainMenuLayer::draw(){
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
+    ccDrawColor4F(1.0, 1.0, 1.0, 1.0);
+    glLineWidth(1);
     ccDrawLine(ccp(s.width/10.0,0), ccp(s.width/10.0, 7.0*s.height/10.0));
     ccDrawLine(ccp(4.0*s.width/10.0,0), ccp(4.0*s.width/10.0, 7.0*s.height/10.0));
     ccDrawLine(ccp(9.5*s.width/10.0,0), ccp(9.5*s.width/10.0, 8.0*s.height/10.0));
@@ -67,8 +69,19 @@ void MainMenuLayer::draw(){
     
 }
 
+void MainMenuLayer::levelsCallback(CCObject* pSender){
+    ((CCLayerMultiplex*)m_pParent)->switchTo(4);
+}
+
 void MainMenuLayer::optionsCallback(CCObject* pSender){
     ((CCLayerMultiplex*)m_pParent)->switchTo(1);
+}
+
+void MainMenuLayer::exitCallback(CCObject* pSender){
+    CCDirector::sharedDirector()->end();
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+    exit(0);
+#endif
 }
 
 
@@ -82,6 +95,65 @@ void MainMenuLayer::startGameCallback(CCObject* pSender)
     pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
     if (pScene)
     {
+        pScene->runGame();
+        pScene->release();
+    }
+}
+
+//------------------------------------------------------------------
+//
+// LevelLayer
+//
+//------------------------------------------------------------------
+
+LevelLayer::LevelLayer()
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    CCMenuItemImage *item1 = CCMenuItemImage::create("button.png", "button.png", this, menu_selector(LevelLayer::startGameCallback));
+    CCMenuItemImage *item2 = CCMenuItemImage::create("Icon.png", "Icon.png", this, menu_selector(LevelLayer::startAccelCallback));
+    CCMenuItemImage *item3 = CCMenuItemImage::create("Icon-72.png", "Icon-72.png", this, menu_selector(LevelLayer::startGameCallback));
+    
+    item1->setScale(0.5);
+    item2->setScale(1.5);
+
+
+    CCMenu *menu = CCMenu::create(item1, item2, item3, NULL);
+    
+    menu->setPosition(CCPointZero);
+    item1->setPosition(CCPointMake(s.width/2 - item2->getContentSize().width*2, s.height/2));
+    item2->setPosition(CCPointMake(s.width/2, s.height/2));
+    item3->setPosition(CCPointMake(s.width/2 + item2->getContentSize().width*2, s.height/2));
+    
+    addChild(menu, 1);
+}
+
+void LevelLayer::startGameCallback(CCObject* pSender)
+{
+    // get the userdata, it's the index of the menu item clicked
+    //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
+    
+    SpaceScene* pScene =  new SpaceScene();
+    pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
+    pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
+    if (pScene)
+    {
+        pScene->runGame();
+        pScene->release();
+    }
+}
+
+void LevelLayer::startAccelCallback(CCObject* pSender)
+{
+    // get the userdata, it's the index of the menu item clicked
+    //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
+    
+    SpaceScene* pScene =  new SpaceScene();
+    pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
+    pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
+    if (pScene)
+    {
+        pScene->gameMode = 1;
         pScene->runGame();
         pScene->release();
     }
@@ -170,7 +242,7 @@ OptionsLayer::OptionsLayer()
     
     menu->alignItemsInColumns(2, 2, 2, 2, 1, NULL);
     
-    addChild( menu );
+    addChild(menu);
     
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     menu->setPosition(ccp(s.width/2, s.height/2));
@@ -260,13 +332,14 @@ void MainMenu::setDataStore(iOSBridge::DataStore * handler)
     this->dataStoreHandler = handler;
 }
 
-void MainMenu::initAudio()
-{
-    toneGenHelp = new iOSBridge::ToneGeneratorHelper(1);
-    dataStoreHandler = new iOSBridge::DataStore();
-}
-
 void MainMenu::onEnter()
 {
-    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    CCScene::onEnter();
+    if (!toneGenHelp) {
+        toneGenHelp = new iOSBridge::ToneGeneratorHelper(1);
+    }
+    toneGenHelp->removeTone(0);
+    toneGenHelp->playBackgroundMusic("echelon.wav");
+    dataStoreHandler = new iOSBridge::DataStore();
+    this->getDataStore()->rootVCPtr = this->rootVC;
 }

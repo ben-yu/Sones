@@ -5,7 +5,10 @@
 #include "CCParallaxNodeExtras.h"
 #include "ToneGeneratorHelper.h"
 #include "DataStore.h"
-#include "Ship.h"
+#include "document.h"
+#include "rapidjson.h"
+#include <curl/curl.h>
+
 
 USING_NS_CC;
 
@@ -20,12 +23,8 @@ public:
     
     static bool accelEnable;
     
-    // Method 'init' in cocos2d-x returns bool, instead of 'id' in cocos2d-iphone (an object pointer)
     virtual void onEnter();
-    
-    // there's no 'id' in cpp, so we recommend to return the class instance pointer
-    //static cocos2d::CCScene* scene(float ver, bool accelEnabled, void *rootVC);
-    
+        
     // a selector callback
     void menuCloseCallback(CCObject* pSender);
     
@@ -95,22 +94,16 @@ private:
     CCLabelTTF *tutorialText4;
     CCLabelTTF *tutorialText5;
     
-    //
-    CCPoint playerPos;
-    
-    // Sound Generator
-    iOSBridge::ToneGeneratorHelper *toneGenHelp;
-    
-    // Data Store Handler
-    iOSBridge::DataStore *dataStoreHandler;
+    iOSBridge::ToneGeneratorHelper *toneGenHelp;    // Sound Generator
+    iOSBridge::DataStore *dataStoreHandler;         // Data Store Handler
+    rapidjson::Document jsonDoc;
     void *rootVCPtr;
     
     float winWidth;
     float winHeight;
     
-    // Player Stats
-    int score = 0;
-    int distance = 0;
+    // Player Data
+    CCPoint playerPos;
     int _health = 10;
     
     float *alphaTargets;
@@ -122,6 +115,12 @@ private:
     bool gameOver = false;
     float tutorialDuration;
     float initTime;
+
+    // Game State Variables
+    int score = 0;
+    int distance = 0;
+    float radarRadius;
+    float seed_freq;
     
     int _nextAsteroid;
     int _curAsteroidCount;
@@ -129,7 +128,6 @@ private:
     int destroyedAsteroids;
     float _nextAsteroidSpawn = 0.0;
     int _nextShipLaser = 0;
-    float seed_freq;
     float win_height;
     float *sineTones;
     float _shipPointsPerSecY;
@@ -139,6 +137,8 @@ private:
 class SpaceScene : public cocos2d::CCScene
 {
 public:
+    int gameMode;
+    
     SpaceScene();
     virtual void runGame();
     
@@ -150,10 +150,18 @@ public:
     
     iOSBridge::DataStore* getDataStore(void);
     void setDataStore(iOSBridge::DataStore *);
+    int sendData();
 private:
     CCScene* mainMenuPtr;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
     iOSBridge::DataStore *dataStoreHandler;
+    rapidjson::Document jsonDoc;
+
+};
+
+struct WriteThis {
+    const char *readptr;
+    long sizeleft;
 };
 
 #endif // __SpaceScene_SCENE_H__

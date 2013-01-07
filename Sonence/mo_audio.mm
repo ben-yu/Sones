@@ -545,7 +545,7 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
         }
         
         // set speaker override
-        err = AudioSessionSetProperty( kAudioSessionProperty_OverrideAudioRoute, sizeof(override), &override );
+       // err = AudioSessionSetProperty( kAudioSessionProperty_OverrideAudioRoute, sizeof(override), &override );
         if( err )
         {
             // TODO: "couldn't get new audio route\n"

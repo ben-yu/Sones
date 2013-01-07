@@ -120,18 +120,19 @@ bool AppDelegate::applicationDidFinishLaunching()
     CCLayer* pLayer2 = new OptionsLayer();
     CCLayer* pLayer3 = new StatsLayer();
     CCLayer* pLayer4 = new CreditsLayer();
+    CCLayer* pLayer5 = new LevelLayer();
     
     
-    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
     pScene->addChild(layer, 0);
     
     pLayer1->release();
     pLayer2->release();
     pLayer3->release();
     pLayer4->release();
+    pLayer5->release();
     
-    ((MainMenu *)pScene)->initAudio();
-    ((MainMenu *)pScene)->getDataStore()->rootVCPtr = rootVC;
+    ((MainMenu *)pScene)->rootVC = rootVC;
     
     // run
     pDirector->runWithScene(pScene);
