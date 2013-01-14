@@ -16,6 +16,8 @@ class SpaceSceneLayer : public CCLayer
 {
 public:
     
+    const float TWOPI = 3.1415926535 * 2.0;
+    
     SpaceSceneLayer(void);
     ~SpaceSceneLayer(void);
     
@@ -104,23 +106,24 @@ private:
     
     // Player Data
     CCPoint playerPos;
-    int _health = 10;
+    int _health = 100;
     
     float *alphaTargets;
     float *timeTargets;
     
+    // Game State Variables
     bool playedTutorial = false;
     bool enemySpawned = false;
     bool asteroidSpawned = false;
     bool gameOver = false;
-    float tutorialDuration;
-    float initTime;
-
-    // Game State Variables
+    bool spawnRegularEnemies;
     int score = 0;
     int distance = 0;
     float radarRadius;
+    float enemyVelocity;
     float seed_freq;
+    float tutorialDuration;
+    float initTime;
     
     int _nextAsteroid;
     int _curAsteroidCount;
@@ -134,6 +137,17 @@ private:
     
 };
 
+class PauseSceneLayer : public CCLayer
+{
+public:
+    PauseSceneLayer();
+    ~PauseSceneLayer();
+    
+    virtual void resumeCallback(CCObject* pSender);
+    virtual void MainMenuCallback(CCObject* pSender);
+        
+};
+
 class SpaceScene : public cocos2d::CCScene
 {
 public:
@@ -144,6 +158,7 @@ public:
     
     // The CallBack for back to the main menu scene
     virtual void MainMenuCallback(CCObject* pSender);
+    virtual void pauseMenuCallback(CCObject* pSender);
     
     iOSBridge::ToneGeneratorHelper* getToneGenerator(void);
     void setToneGenerator(iOSBridge::ToneGeneratorHelper *);
@@ -151,6 +166,10 @@ public:
     iOSBridge::DataStore* getDataStore(void);
     void setDataStore(iOSBridge::DataStore *);
     int sendData();
+    
+    void RecursivelyPauseAllChildren(CCNode* node);
+    void RecursivelyResumeAllChildren(CCNode* node);
+        
 private:
     CCScene* mainMenuPtr;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;

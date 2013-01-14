@@ -341,13 +341,13 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
 
     UInt32 one = 1;
     // enable input
-    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_EnableIO, 
+/*    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_EnableIO,
                                 kAudioUnitScope_Input, 1, &one, sizeof(one) );
     if( err )
     {
         // TODO: "couldn't enable input on the remote I/O unit"
         return false;
-    }
+    }*/
 
     // set render proc
     err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_SetRenderCallback,
@@ -401,13 +401,13 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
         // TODO: "couldn't get the remote I/O unit's output client format"
         return false;
     }
-    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
+/*    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
                                 kAudioUnitScope_Output, 1, &outFormat, sizeof(outFormat) );
     if( err )
     {
         // TODO: "couldn't set the remote I/O unit's input client format"
         return false;
-    }
+    }*/
 
     // print the format
     // printf( "format for remote i/o:\n" );
@@ -540,12 +540,12 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
             }
             else
             {
-                override = kAudioSessionOverrideAudioRoute_Speaker;
+                override = kAudioSessionOverrideAudioRoute_None;
             }
         }
         
         // set speaker override
-       // err = AudioSessionSetProperty( kAudioSessionProperty_OverrideAudioRoute, sizeof(override), &override );
+        err = AudioSessionSetProperty( kAudioSessionProperty_OverrideAudioRoute, sizeof(override), &override );
         if( err )
         {
             // TODO: "couldn't get new audio route\n"
@@ -715,7 +715,7 @@ void MoAudio::shutdown()
 void MoAudio::checkInput()
 {
     // handle input in callback
-    m_handleInput = true;
+    m_handleInput = false;
 
     UInt32 has_input;
     UInt32 size = sizeof(has_input);

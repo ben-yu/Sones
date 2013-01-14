@@ -12,6 +12,7 @@
 #include "cocos2d.h"
 #include "CCEGLView.h"
 #include "TestData.h"
+#include "User.h"
 
 
 @implementation RootViewController
@@ -132,14 +133,26 @@
     return  (interfaceOrientation == UIInterfaceOrientationLandscapeLeft || interfaceOrientation == UIInterfaceOrientationLandscapeRight);
 }
 
-/*
--(void)close {
-    _pDirector = cocos2d::CCDirector::sharedDirector();
-    _pDirector->pause();
-    _sceneptr->stopTones();
-    [self dismissModalViewControllerAnimated:YES];
+-(void)playedTutorial
+{
+    User *curUser = (User *)[NSEntityDescription insertNewObjectForEntityForName:@"User" inManagedObjectContext:self.managedObjectContext];
+    [curUser setPlayedTutorial:[NSNumber numberWithBool:YES]];
 }
-*/
+
+-(void)setUUID:(NSString *)uuid
+{
+    User *curUser = (User *)[NSEntityDescription insertNewObjectForEntityForName:@"User" inManagedObjectContext:self.managedObjectContext];
+    [curUser setUuid:uuid];
+}
+
+-(void)generateUUID
+{
+    User *curUser = (User *)[NSEntityDescription insertNewObjectForEntityForName:@"User" inManagedObjectContext:self.managedObjectContext];
+    CFUUIDRef cfuuid = CFUUIDCreate(NULL);
+    NSString *uuid =  (NSString *)CFUUIDCreateString(NULL, cfuuid);
+    CFRelease(cfuuid);
+    [curUser setUuid:uuid];
+}
 
 -(void)storeDataPoint:(NSString*) identifier
            freqThresh:(double) freq

@@ -6,6 +6,8 @@
 #include "cocos2d.h"
 #include <sstream>
 
+#define USE_CHUNKED 1
+
 using namespace cocos2d;
 using namespace CocosDenshion;
 using namespace std;
@@ -38,11 +40,11 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     tutorialText5 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     
 
-    distLabel->setPosition(ccp(50,20));
+    distLabel->setPosition(ccp(winHeight*0.7,winWidth*0.95));
     this->addChild(distLabel, 1);
     distLabel->setVisible(false);
     
-    scoreLabel->setPosition(ccp(70, 40));
+    scoreLabel->setPosition(ccp(winHeight*0.5, winWidth*0.95));
     this->addChild(scoreLabel, 1);
     scoreLabel->setVisible(false);
     
@@ -178,7 +180,22 @@ SpaceSceneLayer::SpaceSceneLayer(void)
         _shipLasers->addObject(shipLaser);
     }
     
-    win_height = winWidth;
+    CCSprite *hp = CCSprite::create("hp.png");
+    hpBar = CCProgressTimer::create(hp);
+    hpBar->setType(kCCProgressTimerTypeBar);
+    hpBar->setMidpoint(ccp(0,0));
+    //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
+    hpBar->setBarChangeRate(ccp(1, 0));
+    hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.945));
+    hpBar->setScaleX(0.9);
+    hpBar->setScaleY(0.25);
+    
+    healthBar = CCSprite::create("health.png");
+    healthBar->setPosition(ccp(winHeight*0.13,winWidth*0.95));
+    addChild(healthBar);
+    addChild(hpBar);
+    
+    hpBar->setPercentage(100.0);
     
     destroyedAsteroids = 0;
     
@@ -193,8 +210,8 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     this->addChild(_backgroundNode,-1) ;
     
     // 2) Create background sprites
-    _spacedust1 = CCSprite::create("space.jpeg");
-    _spacedust2 = CCSprite::create("space.jpeg");
+    _spacedust1 = CCSprite::create("large_space.png");
+    _spacedust2 = CCSprite::create("large_space.png");
     _planetsunrise = CCSprite::create("bg_planetsunrise.png");
     _galaxy = CCSprite::create("bg_galaxy.png");
     _spacialanomaly = CCSprite::create("bg_spacialanomaly.png");
@@ -214,27 +231,8 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     _backgroundNode->addChild(_planetsunrise,-1 , bgSpeed,ccp(winWidth * 0.8,800));
     _backgroundNode->addChild(_spacialanomaly,-1, bgSpeed,ccp(winWidth * 0.3,1000));
     _backgroundNode->addChild(_spacialanomaly2,-1, bgSpeed,ccp(winWidth * 0.9,1200));
-    CCSprite *hp = CCSprite::create("hp.png");
-    hpBar = CCProgressTimer::create(hp);
-    hpBar->setType(kCCProgressTimerTypeBar);
-    hpBar->setMidpoint(ccp(0,0));
-    //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
-    hpBar->setBarChangeRate(ccp(1, 0));
-    txtWindow = CCSprite::create("futureui1.png");
-    healthBar = CCSprite::create("health.png");
-    txtWindow->setScale(0.27);
-
-    txtWindow->setPosition(ccp(winHeight*0.23,winWidth*0.1));
-    healthBar->setPosition(ccp(winHeight*0.13,winWidth*0.25));
-    hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.24));
-    hpBar->setScaleX(0.9);
-    hpBar->setScaleY(0.25);
-    addChild(txtWindow);
-    addChild(healthBar);
-    addChild(hpBar);
     
-    hpBar->setPercentage(100.0);
-    
+        
     //////////////////////////////
     //
     //  NPC's
@@ -269,8 +267,6 @@ SpaceSceneLayer::SpaceSceneLayer(void)
         _spawnQueue->addObject(CCInteger::create(i));
         
     }
-    
-    float angleStep = tanhf((winWidth/2)/winHeight)/10;
 }
 
 SpaceSceneLayer::~SpaceSceneLayer(void)
@@ -285,13 +281,14 @@ void SpaceSceneLayer::onEnter()
     this->toneGenHelp->playBackgroundMusic("main_background.wav");
     this->dataStoreHandler = ((SpaceScene *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
-    //this->setAccelerometerEnabled(SpaceSceneLayer::accelEnable);
     
     this->scheduleUpdate(); // Start updating
     seed_freq = floorf(randomValueBetween(250.0,300.0));
     
     tutorialDuration = 10 * 1000.0;
-    playedTutorial = true;
+    radarRadius = winWidth/2;
+    enemyVelocity = winWidth/15.0;
+    playedTutorial = false;
     if (!playedTutorial) {
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::playTutorial), 2.0);
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::endTutorial), 35.0);
@@ -337,9 +334,9 @@ void SpaceSceneLayer::update(float dt) {
     for ( int ii = 0  ; ii < spaceDusts->count() ; ii++ ) {
         CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
         float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).y;
-        float size = spaceDust->getContentSize().width ;
+        float size = spaceDust->getContentSize().height ;
         if ( xPosition < -size/2) {
-            _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().width-20.0),spaceDust) ;
+            _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().height/2),spaceDust) ;
         }
     }
     
@@ -352,9 +349,9 @@ void SpaceSceneLayer::update(float dt) {
     for ( int ii = 0 ; ii <backGrounds->count() ; ii++ ) {
         CCSprite * background = (CCSprite *)(backGrounds->objectAtIndex(ii)) ;
         float xPosition = _backgroundNode->convertToWorldSpace(background->getPosition()).y ;
-        float size = background->getContentSize().width;
+        float size = background->getContentSize().height;
         if ( xPosition < -size/2) {
-            _backgroundNode->incrementOffset(ccp(0,2*winWidth + background->getContentSize().width),background);
+            _backgroundNode->incrementOffset(ccp(0,2*winWidth + background->getContentSize().height),background);
         }
     }
     
@@ -433,7 +430,7 @@ void SpaceSceneLayer::update(float dt) {
                 char json[100];
                 sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
                 //jsonDoc.Parse<0>(json);
-                cout << json;
+                //cout << json;
                 continue ;
             }
         }
@@ -451,6 +448,11 @@ void SpaceSceneLayer::update(float dt) {
         index++;
     }
     
+    //////////////////////////////
+    //
+    //  Accelerometer
+    //
+    //////////////////////////////
     
     float maxY = winSize.width - playerShip->getContentSize().width/2;
     float minY = playerShip->getContentSize().width/2;
@@ -460,9 +462,20 @@ void SpaceSceneLayer::update(float dt) {
     newY = MIN(MAX(newY, minY), maxY);
     playerShip->setPosition(ccp(newY,playerShip->getPosition().y));
     
+    //////////////////////////////
+    //
+    //  Game Stats
+    //
+    //////////////////////////////
+    
     if (playedTutorial) {
         distance++;
     }
+    //if (distance % 30 == 0 && radarRadius > winWidth/10)
+    //    radarRadius--;
+    //if (radarRadius <= winWidth/10)
+        //enemyVelocity++;
+    
     stringstream tempString;
     tempString<<distance<<"m";
     distLabel->setString(tempString.str().c_str());
@@ -470,11 +483,14 @@ void SpaceSceneLayer::update(float dt) {
     tempString.str("");
     tempString<<"Score: "<< score;
     scoreLabel->setString(tempString.str().c_str());
+    
+    distLabel->setVisible(true);
+    scoreLabel->setVisible(true);
 }
 
 void SpaceSceneLayer::draw(){
     // Draw Grid Lines
-    
+        
     glEnable(GL_BLEND); // Enable blending for alpha
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -482,45 +498,39 @@ void SpaceSceneLayer::draw(){
     ccDrawColor4F(0.0, 1.0, 0.0, 0.3);
     for (int i = 0; i < 10; i++) {
         ccDrawCircle( playerShip->getPosition(), winWidth/10 * i, 0, 50, false);
-        ccDrawLine(playerShip->getPosition(), ccp(winHeight/10 * i,winWidth));
-
     }
-
-    ccDrawColor4F(0.5, 1.0, 0.5, 0.3);
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.1));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.1));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.2));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.2));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.3));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.3));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.4));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.4));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.5));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.5));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.6));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.6));
-    ccDrawLine(playerShip->getPosition(), ccp(winHeight,winWidth*0.7));
-    ccDrawLine(playerShip->getPosition(), ccp(0,winWidth*0.7));
     
+    int max = 40;
+    float tmp = TWOPI / 40.0;
     int i, n = 120;
     float da, ga, a, b;
-    float radius = 40;
-    int dt = distance % n;
-    const float TWOPI = 3.1415926535 * 2.0;
+    int dt = (int)(getTimeTick()/10) % n;
+    ccDrawColor4F(0.0, 1.0, 1.0, 0.3);
+    for (int i = 0; i < max; i++)  {
+        a = (float)i * tmp;
+        ccDrawLine(playerShip->getPosition(), ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(a), winWidth * sin(a))));
+    }
     
+    ccDrawColor4F(1.0, 0.0, 0.0, 1.0);
+    ccDrawCircle( playerShip->getPosition(), radarRadius, 0, 50, false );
+    
+    // Radar Animation
     da = TWOPI / (float)n;
     
-    for (i = 0 + dt; i < n + dt; i++)  {
+    for (i = 0 + dt; i < n/5 + dt; i++)  {
         a = (float)i * da;
         b = a + da;
-        ga = 0.90 * (float)(i) / (float)n;
-        CCPoint filledVertices[] = { playerShip->getPosition(), ccpAdd(playerShip->getPosition(),ccp(radius * cos(a), radius * sin(a))), ccpAdd(playerShip->getPosition(),ccp(radius * cos(b), radius * sin(b)))};
-        ccDrawSolidPoly(filledVertices, 3, ccc4f(0.0,ga, 0.0, ga/3));
+        ga = 0.8*((float)(i-dt)/(float)(n/5));
+        CCPoint filledVertices[] = { playerShip->getPosition(), ccpAdd(playerShip->getPosition(),ccp(radarRadius * cos(a), radarRadius * sin(a))), ccpAdd(playerShip->getPosition(),ccp(radarRadius * cos(b), radarRadius * sin(b)))};
+        ccDrawSolidPoly(filledVertices, 3, ccc4f(0.0,ga, 0.0, ga));
     }
 }
 
 void SpaceSceneLayer::playTutorial()
 {
+    distLabel->setVisible(false);
+    scoreLabel->setVisible(false);
+    
     CCFiniteTimeAction *fadeIn = CCFadeIn::create(1.0);
     fadeIn->setDuration(1.0);
     CCDelayTime *waitDelay = CCDelayTime::create(1.5);
@@ -565,20 +575,17 @@ void SpaceSceneLayer::endTutorial()
 
 void SpaceSceneLayer::spawnEnemy()
 {
-    double randDuration = 17.0;
-    int multiple = (int) floorf(randomValueBetweenD(1.0,11.0)); // Only generate harmonic pure-tones
+    double randDuration = winWidth/enemyVelocity;
+    int multiple = (int) floorf(randomValueBetweenD(0.0,11.0)); // Only generate harmonic pure-tones
     float randFrequency = multiple * seed_freq;
-    float randY = winHeight/10 * (multiple-1);
     
-//    float da = TWOPI / (float)n;
-    
-    float visibleDelay = 10.0;
+    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
-    //enemy->setOpacity(0);
+    enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, 10.0, 0); // Add pure-tone
+    toneGenHelp->addTone(randFrequency, visibleDelay, 0); // Add pure-tone
     
     enemy->stopAllActions();
     CCAnimation *normal = animCache->animationByName("enemy");
@@ -592,28 +599,31 @@ void SpaceSceneLayer::spawnEnemy()
 
     timeTargets[_nextAsteroid] = randDuration;
 
-    //CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
+    float tmp = TWOPI / 40.0;
+    
     CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
-    enemy->setPosition( ccp(randY,winWidth+enemy->getContentSize().width/2));
-    enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
+    enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(multiple + 5)), winWidth * sin(tmp*(multiple + 5)))));
+    enemy->setRotation(-45.0 + (multiple/10.0)*90.0f);
     enemy->runAction (moveSeq);
     enemy->runAction(seq);
-    //enemy->runAction(fadeAnim);
+    enemy->runAction(fadeAnim);
     enemy->setVisible(true);
 }
 
 void SpaceSceneLayer::spawnEnemyAtLoc(float y)
 {
-    double randDuration = randomValueBetweenD(8.0,9.0);
-    int multiple = y; // Only generate harmonic pure-tones
-    float randFrequency = multiple * seed_freq;
-    float randY = y * winHeight/10;
+    double randDuration = winWidth/enemyVelocity;
+    float randFrequency = y * seed_freq;
+    
+    float tmp = TWOPI / 40.0;
+    
+    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
     enemy->setOpacity(0);
     
     sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, randDuration, 0); // Add pure-tone
+    toneGenHelp->addTone(randFrequency, visibleDelay, 0); // Add pure-tone
     
     enemy->stopAllActions();
     CCAnimation *normal = animCache->animationByName("enemy");
@@ -621,15 +631,15 @@ void SpaceSceneLayer::spawnEnemyAtLoc(float y)
     CCAnimate *animN = CCAnimate::create(normal);
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     
-    CCDelayTime *fadeDelay = CCDelayTime::create(3.0);
-    CCFadeIn *fade = CCFadeIn::create(randDuration-3.0);
+    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay);
+    CCFadeIn *fade = CCFadeIn::create(0.01);
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
     
     timeTargets[_nextAsteroid] = randDuration;
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
-                                                                      ccp(winHeight * 0.5,winWidth * 0.1)),CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setEnemyInvisible)),NULL);
-    enemy->setPosition(ccp(randY,winWidth+enemy->getContentSize().width/2));
-    enemy->setRotation(-45.0 + (randY/winHeight)*90.0f);
+    
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
+    enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(y + 5)), winWidth * sin(tmp*(y + 5)))));
+    enemy->setRotation(-45.0 + (y/10.0)*90.0f);
     enemy->runAction (moveSeq);
     enemy->runAction(seq);
     enemy->runAction(fadeAnim);
@@ -643,7 +653,7 @@ void SpaceSceneLayer::spawnLowFreqEnemy()
 
 void SpaceSceneLayer::spawnHighFreqEnemy()
 {
-    spawnEnemyAtLoc(9);
+    spawnEnemyAtLoc(10);
 }
 
 void SpaceSceneLayer::spawnAsteroid()
@@ -803,6 +813,7 @@ void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
     }
 }
 
+
 void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
 {
     CCScene* pScene = MainMenu::create();
@@ -824,6 +835,78 @@ void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
     toneGenHelp->playBackgroundMusic("echelon.wav");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
+    CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+
+PauseSceneLayer::PauseSceneLayer()
+{
+    // Label Item (CCLabelBMFont)
+    CCMenuItemFont* item1 = CCMenuItemFont::create("Resume", this, menu_selector(PauseSceneLayer::resumeCallback));
+    CCMenuItemFont* item2 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer::MainMenuCallback));
+    CCMenu* menu = CCMenu::create( item1, item2,NULL);
+    menu->alignItemsVertically();
+    
+    // elastic effect
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    int i=0;
+    CCNode* child;
+    CCArray * pArray = menu->getChildren();
+    CCObject* pObject = NULL;
+    CCARRAY_FOREACH(pArray, pObject)
+    {
+        if(pObject == NULL)
+            break;
+        
+        child = (CCNode*)pObject;
+        
+        CCPoint dstPoint = child->getPosition();
+        int offset = (int) (s.width/2 + 50);
+        
+        child->setPosition( CCPointMake( dstPoint.x + offset, dstPoint.y) );
+        child->runAction(CCEaseElasticOut::create(CCMoveBy::create(2, CCPointMake(dstPoint.x - offset,0)), 0.35f));
+        i++;
+    }
+    addChild(menu);
+    menu->setPosition(ccp(s.width/2, s.height/2));
+}
+
+PauseSceneLayer::~PauseSceneLayer()
+{
+    
+}
+
+void PauseSceneLayer::resumeCallback(CCObject* pSender)
+{
+    ((SpaceScene *)(this->getParent()))->RecursivelyResumeAllChildren(this->getParent());
+    this->removeFromParentAndCleanup(true);
+}
+
+void PauseSceneLayer::MainMenuCallback(CCObject* pSender)
+{
+    SpaceScene *parent = (SpaceScene *)this->getParent();
+    parent->sendData();
+    
+    CCScene* pScene = MainMenu::create();
+    CCLayer* pLayer1 = new MainMenuLayer();
+    CCLayer* pLayer2 = new OptionsLayer();
+    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer4 = new CreditsLayer();
+    CCLayer* pLayer5 = new LevelLayer();
+    
+    
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
+    pScene->addChild(layer, 0);
+    
+    pLayer1->release();
+    pLayer2->release();
+    pLayer3->release();
+    pLayer4->release();
+    pLayer5->release();
+    
+    ((MainMenu *) pScene)->setToneGenerator(parent->getToneGenerator());
+    ((MainMenu *) pScene)->setDataStore(parent->getDataStore());
     CCDirector::sharedDirector()->replaceScene(pScene);
 }
 
@@ -863,25 +946,18 @@ void SpaceScene::runGame()
     addChild(pLayer);
     pLayer->autorelease();
     
-    CCDirector::sharedDirector()->replaceScene((CCScene *)this);
 }
 
 SpaceScene::SpaceScene()
 {
     CCScene::init();
         
-    //add the menu item for back to main menu
-    //#if (CC_TARGET_PLATFORM == CC_PLATFORM_MARMALADE)
-    //    CCLabelBMFont* label = CCLabelBMFont::create("MainMenu",  "fonts/arial16.fnt");
-    //#else
-    CCLabelTTF* label = CCLabelTTF::create("MainMenu", "Arial", 20);
-    //#endif
-    CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(SpaceScene::MainMenuCallback));
+    CCMenuItemImage* pMenuItem = CCMenuItemImage::create("glyphicons_174_pause.png", "glyphicons_174_pause.png", this, menu_selector(SpaceScene::pauseMenuCallback) );
     
     CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
     CCSize s = CCDirector::sharedDirector()->getWinSize();
-    pMenu->setPosition( CCPointZero );
-    pMenuItem->setPosition( CCPointMake( s.width - 50, 25) );
+    pMenu->setPosition(CCPointZero);
+    pMenuItem->setPosition( ccp(s.width*0.95,s.height*0.95) );
     
     addChild(pMenu, 1);
 }
@@ -895,7 +971,7 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp)
     
     if(pooh->sizeleft) {
         *(char *)ptr = pooh->readptr[0]; /* copy one single byte */
-        cout << pooh->readptr[0];
+        cout << pooh->readptr[0] << "\n";
         pooh->readptr++;                 /* advance pointer */
         pooh->sizeleft--;                /* less data left */
         return 1;                        /* we return 1 byte at a time! */
@@ -912,11 +988,11 @@ int SpaceScene::sendData()
     struct WriteThis pooh;
     
     char json[100];
-    sprintf(json, "{\"data_point\":{\"uuid\":\"%d\",\"freq\":\"%f\",\"game_type\":\"normal\",\"vol:\"%f\"}}",12345,1000.0,1.0);
-    cout << "\n\n" << json << "\n\n";
-    pooh.readptr =  curl_easy_escape(curl, json, strlen(json));
-    pooh.sizeleft = (long)strlen(json);
+    sprintf(json, "{\"data_point\":{\"uuid\":%d,\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}}",12345,1000.0,1.0);
+    pooh.readptr =  json;
+    pooh.sizeleft = strlen(json);
     
+    cout << "\n\n" << curl_easy_escape(curl,json,strlen(json)) << "\n\n";
     
     /* In windows, this will init the winsock stuff */
     res = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -935,12 +1011,8 @@ int SpaceScene::sendData()
         
         /* Now specify we want to POST data */
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        
-        /* we want to use our own read function */
-        curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback);
-        
-        /* pointer to pass to our read function */
-        curl_easy_setopt(curl, CURLOPT_READDATA, &pooh);
+                
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);
                 
         /* get verbose debug output please */
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -956,7 +1028,9 @@ int SpaceScene::sendData()
         {
             struct curl_slist *chunk = NULL;
             
-            chunk = curl_slist_append(chunk, "Transfer-Encoding: chunked");
+            //chunk = curl_slist_append(chunk, "Transfer-Encoding: chunked");
+            chunk = curl_slist_append(chunk, "content-type: application/json");
+            chunk = curl_slist_append(chunk, "accept: application/json");
             res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
             /* use curl_slist_free_all() after the *perform() call to free this
              list again */
@@ -980,6 +1054,7 @@ int SpaceScene::sendData()
             struct curl_slist *chunk = NULL;
             
             chunk = curl_slist_append(chunk, "Expect:");
+            chunk = curl_slist_append(chunk, "Content-Type: application/json");
             res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
             /* use curl_slist_free_all() after the *perform() call to free this
              list again */
@@ -1023,4 +1098,32 @@ void SpaceScene::MainMenuCallback(CCObject* pSender)
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+void SpaceScene::pauseMenuCallback(CCObject* pSender)
+{
+    CCLayer* pauseLayer = new PauseSceneLayer();
+    addChild(pauseLayer);
+    RecursivelyPauseAllChildren((CCNode *)this->getChildren()->objectAtIndex(0));
+    ((SpaceScene *)(this->getChildren()->objectAtIndex(0)))->pauseSchedulerAndActions();
+}
+
+void SpaceScene::RecursivelyPauseAllChildren( CCNode * node ) {
+    node->pauseSchedulerAndActions();
+    
+    CCObject * obj;
+    CCARRAY_FOREACH(node -> getChildren(), obj) {
+        CCNode * n = (CCNode *)obj;
+        RecursivelyPauseAllChildren(n);
+    }
+}
+
+void SpaceScene::RecursivelyResumeAllChildren( CCNode * node ) {
+    node->resumeSchedulerAndActions();
+    
+    CCObject * obj;
+    CCARRAY_FOREACH(node -> getChildren(), obj) {
+        CCNode * n = (CCNode *)obj;
+        RecursivelyResumeAllChildren(n);
+    }
 }

@@ -20,6 +20,8 @@ namespace iOSBridge{
         DataStore();
         ~DataStore();
         
+        int *readData();
+        
         void saveData(double freq, double volume);
     };
     

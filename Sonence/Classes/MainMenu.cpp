@@ -9,7 +9,7 @@
 #include "MainMenu.h"
 #include "SpaceScene.h"
 
-#define LINE_SPACE          40
+#define TRANSITION_DURATION (1.2f)
 
 //------------------------------------------------------------------
 //
@@ -22,7 +22,7 @@ MainMenuLayer::MainMenuLayer()
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
     CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", 30);
-    title->setPosition(ccp(s.width * 0.32 ,s.height - LINE_SPACE));
+    title->setPosition(ccp(s.width * 0.32 ,s.height*0.9));
     
     CCLabelTTF* selectedText = CCLabelTTF::create("News / Updates", "ChelaOne-Regular", 18);
     selectedText->setPosition(ccp(s.width * 0.7 ,s.height * 0.75));
@@ -41,11 +41,11 @@ MainMenuLayer::MainMenuLayer()
     CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
     pMenu->addChild(optionMenuItem);pMenu->addChild(statsMenuItem);pMenu->addChild(creditsMenuItem);pMenu->addChild(exitMenuItem);
     pMenu->setPosition(CCPointZero);
-    pMenuItem->setPosition( CCPointMake( s.width / 4, (s.height - 3*LINE_SPACE) ));
-    optionMenuItem->setPosition( CCPointMake( s.width / 4, (s.height - 4*LINE_SPACE) ));
-    statsMenuItem->setPosition( CCPointMake( s.width / 4, (s.height - 5*LINE_SPACE) ));
-    creditsMenuItem->setPosition( CCPointMake( s.width / 4, (s.height - 6*LINE_SPACE) ));
-    exitMenuItem->setPosition( CCPointMake( s.width / 4, (s.height - 7*LINE_SPACE) ));
+    pMenuItem->setPosition( CCPointMake( s.width/4, 6.3*s.height/10));
+    optionMenuItem->setPosition( CCPointMake( s.width / 4, 5.0*s.height/10 ));
+    statsMenuItem->setPosition( CCPointMake( s.width / 4, 3.7*s.height/10 ));
+    creditsMenuItem->setPosition( CCPointMake( s.width / 4, 2.4*s.height/10 ));
+    exitMenuItem->setPosition( CCPointMake( s.width / 4, 1*s.height/10 ));
     this->addChild(pMenu,1);
     this->addChild(title,1);
     this->addChild(selectedText,1);
@@ -91,11 +91,16 @@ void MainMenuLayer::startGameCallback(CCObject* pSender)
     //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
     
     SpaceScene* pScene =  new SpaceScene();
+    // fix bug #486, without setDepthTest(false), FlipX,Y will flickers
+    CCDirector::sharedDirector()->setDepthTest(false);
+    CCScene* tranScene = CCTransitionMoveInL::create(TRANSITION_DURATION, pScene);
+    
     pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
     pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
     if (pScene)
     {
         pScene->runGame();
+        CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
 }
@@ -110,51 +115,65 @@ LevelLayer::LevelLayer()
 {
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
-    CCMenuItemImage *item1 = CCMenuItemImage::create("button.png", "button.png", this, menu_selector(LevelLayer::startGameCallback));
-    CCMenuItemImage *item2 = CCMenuItemImage::create("Icon.png", "Icon.png", this, menu_selector(LevelLayer::startAccelCallback));
-    CCMenuItemImage *item3 = CCMenuItemImage::create("Icon-72.png", "Icon-72.png", this, menu_selector(LevelLayer::startGameCallback));
+    CCMenuItemImage *item1 = CCMenuItemImage::create("target-dummy.png", "target-dummy-pressed.png", this, menu_selector(LevelLayer::startGameCallback));
+    CCMenuItemImage *item2 = CCMenuItemImage::create("alien-skull.png", "alien-skull-pressed.png", this, menu_selector(LevelLayer::startAccelCallback));
+    CCMenuItemImage *item3 = CCMenuItemImage::create("anthem.png", "anthem.png", this, menu_selector(LevelLayer::startGameCallback));
     
-    item1->setScale(0.5);
-    item2->setScale(1.5);
-
+    item1->setScale(0.15);
+    item2->setScale(0.15);
+    item3->setScale(0.15);
 
     CCMenu *menu = CCMenu::create(item1, item2, item3, NULL);
     
     menu->setPosition(CCPointZero);
-    item1->setPosition(CCPointMake(s.width/2 - item2->getContentSize().width*2, s.height/2));
-    item2->setPosition(CCPointMake(s.width/2, s.height/2));
-    item3->setPosition(CCPointMake(s.width/2 + item2->getContentSize().width*2, s.height/2));
+    item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.15*item2->getContentSize().width*2));
+    item2->setPosition(CCPointMake(s.width/4, s.height/2));
+    item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.15*item2->getContentSize().width*2));
+    
+    CCLabelTTF *item1Label = CCLabelTTF::create("Target Practice", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item3Label = CCLabelTTF::create("3D Sounds", "PressStart2P-Regular", 12.0);
+    
+    item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.15*item2->getContentSize().width*2));
+    item2Label->setPosition(CCPointMake(s.width/2, s.height/2));
+    item3Label->setPosition(CCPointMake(s.width/2, s.height/2 - 0.15*item2->getContentSize().width*2));
     
     addChild(menu, 1);
+    addChild(item1Label);addChild(item2Label);addChild(item3Label);
 }
 
 void LevelLayer::startGameCallback(CCObject* pSender)
 {
-    // get the userdata, it's the index of the menu item clicked
-    //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
     
     SpaceScene* pScene =  new SpaceScene();
+    // fix bug #486, without setDepthTest(false), FlipX,Y will flickers
+    CCDirector::sharedDirector()->setDepthTest(false);
+    CCScene* tranScene = CCTransitionZoomFlipX::create(TRANSITION_DURATION, pScene);
+    
     pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
     pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
     if (pScene)
     {
         pScene->runGame();
+        CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
 }
 
 void LevelLayer::startAccelCallback(CCObject* pSender)
 {
-    // get the userdata, it's the index of the menu item clicked
-    //CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
-    
     SpaceScene* pScene =  new SpaceScene();
+    // fix bug #486, without setDepthTest(false), FlipX,Y will flickers
+    CCDirector::sharedDirector()->setDepthTest(false);
+    CCScene* tranScene = CCTransitionZoomFlipX::create(TRANSITION_DURATION, pScene);
+    
     pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
     pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
     if (pScene)
     {
         pScene->gameMode = 1;
         pScene->runGame();
+        CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
 }
@@ -214,12 +233,6 @@ OptionsLayer::OptionsLayer()
                                                                  CCMenuItemFont::create( "Off" ),
                                                                  NULL );
     
-    //UxArray* more_items = UxArray::arrayWithObjects(
-    //                                                 CCMenuItemFont::create( "33%" ),
-    //                                                 CCMenuItemFont::create( "66%" ),
-    //                                                 CCMenuItemFont::create( "100%" ),
-    //                                                 NULL );
-    // TIP: you can manipulate the items like any other CCMutableArray
     item4->getSubItems()->addObject( CCMenuItemFont::create( "33%" ) );
     item4->getSubItems()->addObject( CCMenuItemFont::create( "66%" ) );
     item4->getSubItems()->addObject( CCMenuItemFont::create( "100%" ) );
