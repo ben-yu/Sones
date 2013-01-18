@@ -26,5 +26,6 @@
 -(void)storeDataPoint:(NSString*) identifier
            freqThresh:(double) freq
             volThresh:(double) vol;
+-(NSMutableArray *)getData;
 
 @end

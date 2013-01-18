@@ -60,6 +60,16 @@ namespace iOSBridge{
         [((ToneGenerator_objc *)toneGenerator_objc)   disableBackground];
     }
     
+    void ToneGeneratorHelper::enableTones()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   ResumeTone];
+    }
+    
+    void ToneGeneratorHelper::disableTones()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   PauseTone];
+    }
+    
     void ToneGeneratorHelper::stop()
     {
         [((ToneGenerator_objc *)toneGenerator_objc)   Stop];

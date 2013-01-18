@@ -21,21 +21,21 @@ MainMenuLayer::MainMenuLayer()
 {
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
-    CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", 30);
+    CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", floor(30 * s.width/640));
     title->setPosition(ccp(s.width * 0.32 ,s.height*0.9));
     
-    CCLabelTTF* selectedText = CCLabelTTF::create("News / Updates", "ChelaOne-Regular", 18);
+    CCLabelTTF* selectedText = CCLabelTTF::create("News / Updates", "ChelaOne-Regular", floor(14 * s.width/640));
     selectedText->setPosition(ccp(s.width * 0.7 ,s.height * 0.75));
     
-    CCLabelTTF* label = CCLabelTTF::create("New Game", "Ubuntu-Regular", 14);
+    CCLabelTTF* label = CCLabelTTF::create("New Game", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(MainMenuLayer::levelsCallback));
-    CCLabelTTF* optionLabel = CCLabelTTF::create("Options", "Ubuntu-Regular", 14);
+    CCLabelTTF* optionLabel = CCLabelTTF::create("Options", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* optionMenuItem = CCMenuItemLabel::create(optionLabel, this, menu_selector(MainMenuLayer::optionsCallback));
-    CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", 14);
-    CCMenuItemLabel* statsMenuItem = CCMenuItemLabel::create(statsLabel, this, menu_selector(MainMenuLayer::startGameCallback));
-    CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", 14);
+    CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", floor(14 * s.width/640));
+    CCMenuItemLabel* statsMenuItem = CCMenuItemLabel::create(statsLabel, this, menu_selector(MainMenuLayer::statsCallback));
+    CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* creditsMenuItem = CCMenuItemLabel::create(creditsLabel, this, menu_selector(MainMenuLayer::startGameCallback));
-    CCLabelTTF* exitLabel = CCLabelTTF::create("Exit", "Ubuntu-Regular", 14);
+    CCLabelTTF* exitLabel = CCLabelTTF::create("Exit", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* exitMenuItem = CCMenuItemLabel::create(exitLabel, this, menu_selector(MainMenuLayer::exitCallback));
     
     CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
@@ -75,6 +75,10 @@ void MainMenuLayer::levelsCallback(CCObject* pSender){
 
 void MainMenuLayer::optionsCallback(CCObject* pSender){
     ((CCLayerMultiplex*)m_pParent)->switchTo(1);
+}
+
+void MainMenuLayer::statsCallback(CCObject* pSender){
+    ((CCLayerMultiplex*)m_pParent)->switchTo(2);
 }
 
 void MainMenuLayer::exitCallback(CCObject* pSender){
@@ -119,24 +123,27 @@ LevelLayer::LevelLayer()
     CCMenuItemImage *item2 = CCMenuItemImage::create("alien-skull.png", "alien-skull-pressed.png", this, menu_selector(LevelLayer::startAccelCallback));
     CCMenuItemImage *item3 = CCMenuItemImage::create("anthem.png", "anthem.png", this, menu_selector(LevelLayer::startGameCallback));
     
-    item1->setScale(0.15);
-    item2->setScale(0.15);
-    item3->setScale(0.15);
+    item1->setScale(0.05 * s.width/640);
+    item2->setScale(0.05 * s.width/640);
+    item3->setScale(0.05 * s.width/640);
+    
+    item2->setEnabled(false);
+    item3->setEnabled(false);
 
     CCMenu *menu = CCMenu::create(item1, item2, item3, NULL);
     
     menu->setPosition(CCPointZero);
-    item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.15*item2->getContentSize().width*2));
+    item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.05*item2->getContentSize().width*2));
     item2->setPosition(CCPointMake(s.width/4, s.height/2));
-    item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.15*item2->getContentSize().width*2));
+    item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.05*item2->getContentSize().width*2));
     
     CCLabelTTF *item1Label = CCLabelTTF::create("Target Practice", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item3Label = CCLabelTTF::create("3D Sounds", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders - Work in Progress", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item3Label = CCLabelTTF::create("3D Sounds - Work in Progress", "PressStart2P-Regular", 12.0);
     
-    item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.15*item2->getContentSize().width*2));
+    item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.05*item2->getContentSize().width*2));
     item2Label->setPosition(CCPointMake(s.width/2, s.height/2));
-    item3Label->setPosition(CCPointMake(s.width/2, s.height/2 - 0.15*item2->getContentSize().width*2));
+    item3Label->setPosition(CCPointMake(s.width/2, s.height/2 - 0.05*item2->getContentSize().width*2));
     
     addChild(menu, 1);
     addChild(item1Label);addChild(item2Label);addChild(item3Label);
@@ -155,6 +162,7 @@ void LevelLayer::startGameCallback(CCObject* pSender)
     if (pScene)
     {
         pScene->runGame();
+        pScene->rootVC = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->rootVC;
         CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
@@ -291,15 +299,7 @@ void OptionsLayer::backCallback(CCObject* sender)
     ((CCLayerMultiplex*)m_pParent)->switchTo(0);
 }
 
-//------------------------------------------------------------------
-//
-// StatsLayer
-//
-//------------------------------------------------------------------
-void StatsLayer::onEnter()
-{
-    CCLayer::onEnter();
-}
+
 //------------------------------------------------------------------
 //
 // CreditsLayer

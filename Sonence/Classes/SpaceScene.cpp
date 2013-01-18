@@ -4,6 +4,7 @@
 #include "ToneGeneratorHelper.h"
 #include "Ship.h"
 #include "cocos2d.h"
+#include "AudiogramScene.h"
 #include <sstream>
 
 #define USE_CHUNKED 1
@@ -210,8 +211,8 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     this->addChild(_backgroundNode,-1) ;
     
     // 2) Create background sprites
-    _spacedust1 = CCSprite::create("large_space.png");
-    _spacedust2 = CCSprite::create("large_space.png");
+    _spacedust1 = CCSprite::create("Starfield.jpg");
+    _spacedust2 = CCSprite::create("Starfield.jpg");
     _planetsunrise = CCSprite::create("bg_planetsunrise.png");
     _galaxy = CCSprite::create("bg_galaxy.png");
     _spacialanomaly = CCSprite::create("bg_spacialanomaly.png");
@@ -222,10 +223,8 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     CCPoint bgSpeed = ccp(0.05, 0.05);
     
     // 4) Add children to CCParallaxNode
-    _spacedust1->setRotation(90.0f);
-    _spacedust2->setRotation(90.0f);
     _backgroundNode->addChild(_spacedust1, -2 , dustSpeed, ccp(0,0) ); // 2
-    _backgroundNode->addChild(_spacedust2, -2 , dustSpeed, ccp(0,winWidth));
+    _backgroundNode->addChild(_spacedust2, -2 , dustSpeed, ccp(0,_spacedust2->getContentSize().height));
     
     _backgroundNode->addChild(_galaxy,-1, bgSpeed , ccp(winWidth * 0.7,0));
     _backgroundNode->addChild(_planetsunrise,-1 , bgSpeed,ccp(winWidth * 0.8,800));
@@ -246,6 +245,7 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     alphaTargets = (float *) calloc(sizeof(float),KNUMENEMIES);
     _asteroids = new CCArray();
     _enemies = new CCArray();
+    _AIEnemies = new CCArray();
     
     for(int i = 0; i < KNUMENEMIES; i++) {
         CCSprite *enemy = CCSprite::create();
@@ -254,6 +254,13 @@ SpaceSceneLayer::SpaceSceneLayer(void)
         enemy->setVisible(false);
         addChild(enemy);
         _enemies->addObject(enemy);
+    }
+    
+    for(int i = 0; i < KNUMENEMIES; i++) {
+        CCSprite *enemy = CCSprite::create("warrior1_0.png");
+        enemy->setVisible(false);
+        addChild(enemy);
+        _AIEnemies->addObject(enemy);
     }
     
     #define KNUMASTEROIDS 10
@@ -335,8 +342,8 @@ void SpaceSceneLayer::update(float dt) {
         CCSprite * spaceDust = (CCSprite *)(spaceDusts->objectAtIndex(ii)) ;
         float xPosition = _backgroundNode->convertToWorldSpace(spaceDust->getPosition()).y;
         float size = spaceDust->getContentSize().height ;
-        if ( xPosition < -size/2) {
-            _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().height/2),spaceDust) ;
+        if ( xPosition < -size) {
+            _backgroundNode->incrementOffset(ccp(0,2*spaceDust->getContentSize().height),spaceDust) ;
         }
     }
     
@@ -398,6 +405,7 @@ void SpaceSceneLayer::update(float dt) {
                 asteroid->setVisible(false);
                 setAsteroidInvisible(asteroid);
                 _backgroundNode->removeChild(asteroid, 1);
+                score -= 10;
                 continue ;
             }
         }
@@ -431,6 +439,17 @@ void SpaceSceneLayer::update(float dt) {
                 sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
                 //jsonDoc.Parse<0>(json);
                 //cout << json;
+                
+                m_emitter = CCParticleExplosion::create();
+                m_emitter->retain();
+                addChild(m_emitter, 10);
+                
+                m_emitter->setTexture( CCTextureCache::sharedTextureCache()->addImage("fire.png") );
+                m_emitter->setAutoRemoveOnFinish(true);
+                m_emitter->setPosition(enemy->getPosition());
+                if (score % 100 == 0) {
+                    nextLevel();
+                }
                 continue ;
             }
         }
@@ -471,11 +490,7 @@ void SpaceSceneLayer::update(float dt) {
     if (playedTutorial) {
         distance++;
     }
-    //if (distance % 30 == 0 && radarRadius > winWidth/10)
-    //    radarRadius--;
-    //if (radarRadius <= winWidth/10)
-        //enemyVelocity++;
-    
+        
     stringstream tempString;
     tempString<<distance<<"m";
     distLabel->setString(tempString.str().c_str());
@@ -683,6 +698,7 @@ void SpaceSceneLayer::spawnAsteroid()
     _spawnQueue->removeObject(randomIndex);
 }
 
+
 float SpaceSceneLayer::randomValueBetween( float low , float high ) {
     return (((float) arc4random() / 0xFFFFFFFFu) * (high - low)) + low;
 }
@@ -819,7 +835,7 @@ void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
     CCScene* pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
-    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
     
     
@@ -836,6 +852,31 @@ void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+void SpaceSceneLayer::nextLevel()
+{
+    if (radarRadius > winWidth/10) {
+        radarRadius -= winWidth/10;
+    } else {
+        enemyVelocity += 10;
+    }
+    
+    stringstream tempString;
+    tempString<<"Level " << level;
+    tutorialText->setString(tempString.str().c_str());
+    
+    tutorialText->setOpacity(0);
+    tutorialText->setVisible(true);
+    CCFiniteTimeAction *fadeIn = CCFadeIn::create(1.0);
+    fadeIn->setDuration(1.0);
+    CCDelayTime *waitDelay = CCDelayTime::create(1.5);
+    CCFiniteTimeAction *fadeOut = CCFadeOut::create(1.0);
+    fadeOut->setDuration(1.0);
+    
+    tutorialText->runAction(CCSequence::create (fadeIn,waitDelay,fadeOut,fadeIn,waitDelay,fadeOut,NULL));
+    
+    level++;
 }
 
 
@@ -880,24 +921,28 @@ PauseSceneLayer::~PauseSceneLayer()
 void PauseSceneLayer::resumeCallback(CCObject* pSender)
 {
     ((SpaceScene *)(this->getParent()))->RecursivelyResumeAllChildren(this->getParent());
+    ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableTones();
     this->removeFromParentAndCleanup(true);
 }
 
 void PauseSceneLayer::MainMenuCallback(CCObject* pSender)
 {
     SpaceScene *parent = (SpaceScene *)this->getParent();
-    parent->sendData();
+    
+    //parent->sendData();
     
     CCScene* pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
-    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
     CCLayer* pLayer5 = new LevelLayer();
     
     
     CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
     pScene->addChild(layer, 0);
+
+    ((MainMenu *)(pScene))->rootVC = parent->rootVC;
     
     pLayer1->release();
     pLayer2->release();
@@ -953,7 +998,7 @@ SpaceScene::SpaceScene()
     CCScene::init();
         
     CCMenuItemImage* pMenuItem = CCMenuItemImage::create("glyphicons_174_pause.png", "glyphicons_174_pause.png", this, menu_selector(SpaceScene::pauseMenuCallback) );
-    
+    pMenuItem->setScale(2.0);
     CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     pMenu->setPosition(CCPointZero);
@@ -1081,7 +1126,7 @@ void SpaceScene::MainMenuCallback(CCObject* pSender)
     CCScene* pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
-    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
     CCLayer* pLayer5 = new LevelLayer();
     
@@ -1106,6 +1151,7 @@ void SpaceScene::pauseMenuCallback(CCObject* pSender)
     addChild(pauseLayer);
     RecursivelyPauseAllChildren((CCNode *)this->getChildren()->objectAtIndex(0));
     ((SpaceScene *)(this->getChildren()->objectAtIndex(0)))->pauseSchedulerAndActions();
+    this->getToneGenerator()->disableTones();
 }
 
 void SpaceScene::RecursivelyPauseAllChildren( CCNode * node ) {

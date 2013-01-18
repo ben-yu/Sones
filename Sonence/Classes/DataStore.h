@@ -11,6 +11,11 @@
 
 namespace iOSBridge{
     
+    struct DataPoint {
+        float freq;
+        float vol;
+    };
+    
     class  DataStore {
         
     public:
@@ -20,9 +25,11 @@ namespace iOSBridge{
         DataStore();
         ~DataStore();
         
-        int *readData();
-        
         void saveData(double freq, double volume);
+        DataPoint* readData();
+        
+        DataPoint* returnData;
+        int numOfElements;
     };
     
 }

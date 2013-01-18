@@ -16,6 +16,7 @@
 #include "DataStore.h"
 #include "Ship.h"
 #include "SpaceScene.h"
+#include "AudiogramScene.h"
 
 USING_NS_CC;
 class MainMenuLayer : public CCLayer
@@ -27,6 +28,7 @@ public:
     
     void optionsCallback(CCObject* pSender);
     void levelsCallback(CCObject* pSender);
+    void statsCallback(CCObject* pSender);
     void exitCallback(CCObject* pSender);
     
     CREATE_FUNC(MainMenuLayer);
@@ -67,16 +69,6 @@ public:
     
     
     CREATE_FUNC(OptionsLayer);
-private:
-    
-};
-
-class StatsLayer : public CCLayer
-{
-public:
-    virtual void onEnter();
-
-    CREATE_FUNC(StatsLayer);
 private:
     
 };

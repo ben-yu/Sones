@@ -3,13 +3,17 @@
 //  Sonence
 //
 //  Created by Benjamin Yu on 2012-10-14.
-//  Copyright __MyCompanyName__ 2012. All rights reserved.
+//  Copyright APL 2012. All rights reserved.
 //
 
 #ifndef  _APP_DELEGATE_H_
 #define  _APP_DELEGATE_H_
 
 #include "CCApplication.h"
+#include "cocos2d.h"
+#include "SpaceScene.h"
+#include "MainMenu.h"
+#include "AudiogramScene.h"
 
 /**
 @brief    The cocos2d Application.
@@ -51,6 +55,7 @@ public:
     
 private:
     void* rootVC;
+    CCScene* pScene;
 };
 
 #endif // _APP_DELEGATE_H_

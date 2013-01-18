@@ -8,10 +8,6 @@
 
 #include "AppDelegate.h"
 
-#include "cocos2d.h"
-#include "SpaceScene.h"
-#include "MainMenu.h"
-
 USING_NS_CC;
 
 AppDelegate::AppDelegate()
@@ -115,10 +111,10 @@ bool AppDelegate::applicationDidFinishLaunching()
     pDirector->setAnimationInterval(1.0 / 60);
 
     // create a scene. it's an autorelease object
-    CCScene* pScene = MainMenu::create();
+    pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
-    CCLayer* pLayer3 = new StatsLayer();
+    CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
     CCLayer* pLayer5 = new LevelLayer();
     
@@ -131,9 +127,7 @@ bool AppDelegate::applicationDidFinishLaunching()
     pLayer3->release();
     pLayer4->release();
     pLayer5->release();
-    
-    ((MainMenu *)pScene)->rootVC = rootVC;
-    
+        
     // run
     pDirector->runWithScene(pScene);
 
@@ -164,4 +158,5 @@ void* AppDelegate::getRootVC() {
 
 void AppDelegate::setRootVC(void* vc){
     this->rootVC = vc;
+    ((MainMenu *)pScene)->rootVC = rootVC;
 }

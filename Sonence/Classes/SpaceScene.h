@@ -60,6 +60,7 @@ public:
     void spawnLowFreqEnemy();
     void spawnHighFreqEnemy();
     void spawnAsteroid();
+    void nextLevel();
     
     CREATE_FUNC(SpaceSceneLayer);
         
@@ -81,6 +82,7 @@ private:
     CCArray  *_asteroids;
     CCArray *_spawnQueue;
     CCArray  *_enemies;
+    CCArray *_AIEnemies;
     CCArray * _shipLasers;
     CCParticleSystem*    m_emitter;
     
@@ -119,6 +121,7 @@ private:
     bool spawnRegularEnemies;
     int score = 0;
     int distance = 0;
+    int level = 1;
     float radarRadius;
     float enemyVelocity;
     float seed_freq;
@@ -169,6 +172,8 @@ public:
     
     void RecursivelyPauseAllChildren(CCNode* node);
     void RecursivelyResumeAllChildren(CCNode* node);
+    
+    void *rootVC;
         
 private:
     CCScene* mainMenuPtr;

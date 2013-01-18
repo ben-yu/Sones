@@ -166,5 +166,26 @@
     [self.managedObjectContext save:nil];
 }
 
+-(NSMutableArray *)getData
+{
+    NSManagedObjectContext *moc = [self managedObjectContext];
+    NSEntityDescription *entityDescription = [NSEntityDescription
+                                              entityForName:@"TestData" inManagedObjectContext:moc];
+    NSFetchRequest *request = [[NSFetchRequest alloc] init];
+    [request setEntity:entityDescription];
+    request.sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"freq"
+                                                                                     ascending:YES
+                                                                                      selector:@selector(localizedCaseInsensitiveCompare:)]];
+    
+    NSError *error;
+    NSArray *reqData = [moc executeFetchRequest:request error:&error];
+    NSMutableArray *data = [NSMutableArray array];
+    for (TestData *a in reqData){
+        [data addObject:[NSValue valueWithCGPoint:CGPointMake([a.freq floatValue], [a.volume floatValue])]];
+    }
+    
+    return data;
+}
+
 
 @end

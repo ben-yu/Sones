@@ -53,5 +53,7 @@ struct AudioData{
        timeConst:(double) duration
          toneNum:(int) index;
 - (NSNumber *) RemoveTone:(int) index;
+- (void) ResumeTone;
+- (void) PauseTone;
 
 @end

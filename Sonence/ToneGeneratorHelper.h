@@ -27,6 +27,8 @@ class  ToneGeneratorHelper {
         void disableBackground();
         void play();
         void stop();
+        void enableTones();
+        void disableTones();
     private:
         void* toneGenerator_objc;
     };
