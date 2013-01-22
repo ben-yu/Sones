@@ -30,6 +30,7 @@ public:
     void levelsCallback(CCObject* pSender);
     void statsCallback(CCObject* pSender);
     void exitCallback(CCObject* pSender);
+    void creditsCallback(CCObject* pSender);
     
     CREATE_FUNC(MainMenuLayer);
 private:
@@ -76,7 +77,9 @@ private:
 class CreditsLayer : public CCLayer
 {
 public:
+    CreditsLayer();
     virtual void onEnter();
+    void backCallback(CCObject* pSender);
     
     CREATE_FUNC(CreditsLayer);
 private:

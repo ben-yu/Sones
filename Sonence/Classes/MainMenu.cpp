@@ -35,7 +35,7 @@ MainMenuLayer::MainMenuLayer()
     CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* statsMenuItem = CCMenuItemLabel::create(statsLabel, this, menu_selector(MainMenuLayer::statsCallback));
     CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* creditsMenuItem = CCMenuItemLabel::create(creditsLabel, this, menu_selector(MainMenuLayer::startGameCallback));
+    CCMenuItemLabel* creditsMenuItem = CCMenuItemLabel::create(creditsLabel, this, menu_selector(MainMenuLayer::creditsCallback));
     CCLabelTTF* exitLabel = CCLabelTTF::create("Exit", "Ubuntu-Regular", floor(14 * s.width/640));
     CCMenuItemLabel* exitMenuItem = CCMenuItemLabel::create(exitLabel, this, menu_selector(MainMenuLayer::exitCallback));
     
@@ -81,6 +81,11 @@ void MainMenuLayer::optionsCallback(CCObject* pSender){
 void MainMenuLayer::statsCallback(CCObject* pSender){
     ((CCLayerMultiplex*)m_pParent)->switchTo(2);
 }
+
+void MainMenuLayer::creditsCallback(CCObject* pSender){
+    ((CCLayerMultiplex*)m_pParent)->switchTo(3);
+}
+
 
 void MainMenuLayer::exitCallback(CCObject* pSender){
     CCDirector::sharedDirector()->end();
@@ -130,8 +135,12 @@ LevelLayer::LevelLayer()
     
     //item2->setEnabled(false);
     item3->setEnabled(false);
-
-    CCMenu *menu = CCMenu::create(item1, item2, item3, NULL);
+    
+    CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
+    CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(CreditsLayer::backCallback) );
+    back->setPosition(ccp(s.width*0.8,s.height*0.2));
+    
+    CCMenu *menu = CCMenu::create(item1, item2, item3, back, NULL);
     
     menu->setPosition(CCPointZero);
     item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.05*item2->getContentSize().width*2));
@@ -186,6 +195,12 @@ void LevelLayer::startAccelCallback(CCObject* pSender)
         pScene->release();
     }
 }
+
+void LevelLayer::backCallback(CCObject* sender)
+{
+    ((CCLayerMultiplex*)m_pParent)->switchTo(0);
+}
+
 
 //------------------------------------------------------------------
 //
@@ -306,9 +321,42 @@ void OptionsLayer::backCallback(CCObject* sender)
 // CreditsLayer
 //
 //------------------------------------------------------------------
+
+CreditsLayer::CreditsLayer()
+{
+    
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    CCLabelTTF *creditText = CCLabelTTF::create("By: Benjamin Yu", "Audiowide-Regular", 12.0);
+    CCLabelTTF *creditText2 = CCLabelTTF::create("Libraries\n==========", "Audiowide-Regular", 12.0);
+    CCLabelTTF *creditText3 = CCLabelTTF::create("Graphics: cocos2d-x\n Audio Synthesis: momu-stk\n Physics Engine: Box2D\n JSON Parsing: rapidjson\n Networking: libCurl\n", "Audiowide-Regular", 12.0);
+    
+    creditText->setPosition(ccp(s.width/2,s.height*0.9));
+    creditText2->setPosition(ccp(s.width/2,s.height*0.7));
+    creditText3->setPosition(ccp(s.width/2,s.height*0.5));
+    
+    addChild(creditText);
+    addChild(creditText2);
+    addChild(creditText3);
+    
+    CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
+    CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(CreditsLayer::backCallback) );
+    
+    CCMenu* menu = CCMenu::create(back,NULL);
+    addChild(menu);
+    menu->setPosition(ccp(s.width/2,s.height*0.2));
+    
+}
+
+
 void CreditsLayer::onEnter()
 {
     CCLayer::onEnter();
+}
+
+void CreditsLayer::backCallback(CCObject* sender)
+{
+    ((CCLayerMultiplex*)m_pParent)->switchTo(0);
 }
 
 //------------------------------------------------------------------

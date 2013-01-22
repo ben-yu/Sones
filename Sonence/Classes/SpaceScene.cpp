@@ -985,9 +985,36 @@ PauseSceneLayer::PauseSceneLayer()
 {
     // Label Item (CCLabelBMFont)
     CCMenuItemFont* item1 = CCMenuItemFont::create("Resume", this, menu_selector(PauseSceneLayer::resumeCallback));
-    CCMenuItemFont* item2 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer::MainMenuCallback));
-    CCMenu* menu = CCMenu::create( item1, item2,NULL);
-    menu->alignItemsVertically();
+    
+    
+    CCMenuItemFont::setFontName("PressStart2P-Regular");
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont*title2 = CCMenuItemFont::create("Effects");
+    title2->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle* item2 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer::fxCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont* title3 = CCMenuItemFont::create( "Music" );
+    title3->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle *item3 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer::musicCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    
+    CCMenuItemFont* item4 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer::MainMenuCallback));
+    CCMenu* menu = CCMenu::create( item1, title2, item2, title3, item3, item4, NULL);
+    menu->alignItemsInColumns(1,2,2,1,NULL);
     
     // elastic effect
     CCSize s = CCDirector::sharedDirector()->getWinSize();
@@ -1055,6 +1082,24 @@ void PauseSceneLayer::MainMenuCallback(CCObject* pSender)
     ((MainMenu *) pScene)->setToneGenerator(parent->getToneGenerator());
     ((MainMenu *) pScene)->setDataStore(parent->getDataStore());
     CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+void PauseSceneLayer::musicCallback(CCObject *sender)
+{
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->disableBackground();
+    } else {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableBackground();
+    }
+}
+
+void PauseSceneLayer::fxCallback(CCObject *sender)
+{
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->disableTones();
+    } else {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableTones();
+    }
 }
 
 iOSBridge::ToneGeneratorHelper* SpaceScene::getToneGenerator()

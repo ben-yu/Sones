@@ -156,6 +156,8 @@ public:
     
     virtual void resumeCallback(CCObject* pSender);
     virtual void MainMenuCallback(CCObject* pSender);
+    void musicCallback(CCObject *sender);
+    void fxCallback(CCObject *sender);
         
 };
 
