@@ -72,7 +72,7 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     tutorialText2->setVisible(false);
     
     tempString.str("");
-    tempString<<"Lower frequencies will come from your left.";
+    tempString<<"They will attack you from the following directions";
     tutorialText3->setString(tempString.str().c_str());
     tutorialText3->setColor(ccc3(0, 255, 0));
     tutorialText3->setHorizontalAlignment(kCCTextAlignmentCenter);
@@ -286,11 +286,12 @@ void SpaceSceneLayer::onEnter()
     
     this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator();
     this->toneGenHelp->playBackgroundMusic("main_background.wav");
+    this->toneGenHelp->enableTones();
     this->dataStoreHandler = ((SpaceScene *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
     
     this->scheduleUpdate(); // Start updating
-    seed_freq = floorf(randomValueBetween(250.0,300.0));
+    seed_freq = floorf(randomValueBetween(250.0,600.0));
     
     tutorialDuration = 10 * 1000.0;
     radarRadius = winWidth/2;
@@ -374,7 +375,7 @@ void SpaceSceneLayer::update(float dt) {
         
         float spawnRate = curTimeMillis/5000.0;
         
-        this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnEnemy), 2.0 - spawnRate);
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnRandomEnemy), 2.0 - spawnRate);
     }
     
     if ((_curAsteroidCount < KNUMASTEROIDS || _nextAsteroid != 0 )&& playedTutorial) {
@@ -434,19 +435,22 @@ void SpaceSceneLayer::update(float dt) {
                 float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
-                dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol);
-                char json[100];
-                sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
+                dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol, earIndex);
+                
+                //char json[100];
+                //sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
                 //jsonDoc.Parse<0>(json);
                 //cout << json;
                 
                 m_emitter = CCParticleExplosion::create();
                 m_emitter->retain();
                 addChild(m_emitter, 10);
-                
                 m_emitter->setTexture( CCTextureCache::sharedTextureCache()->addImage("fire.png") );
                 m_emitter->setAutoRemoveOnFinish(true);
                 m_emitter->setPosition(enemy->getPosition());
+                
+                toneGenHelp->playExplosion();
+                
                 if (score % 100 == 0) {
                     nextLevel();
                 }
@@ -480,7 +484,7 @@ void SpaceSceneLayer::update(float dt) {
     float newY = playerShip->getPosition().x + diff;
     newY = MIN(MAX(newY, minY), maxY);
     playerShip->setPosition(ccp(newY,playerShip->getPosition().y));
-    
+        
     //////////////////////////////
     //
     //  Game Stats
@@ -568,14 +572,19 @@ void SpaceSceneLayer::playTutorial()
     waitDelay = CCDelayTime::create(3.0);
     tutorialText2->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
     tutorialText2->runAction(CCSequence::create(CCDelayTime::create(10.0),fadeOut,NULL));
-    initialDelay->setDuration(13.5);
+    initialDelay->setDuration(10.5);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn1_L), 15.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn2_L), 16.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn3_L), 17.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn4_L), 18.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn5_L), 19.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn1_R), 20.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn2_R), 21.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn3_R), 22.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn4_R), 23.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn5_R), 24.0f);
     tutorialText3->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
-    tutorialText3->runAction(CCSequence::create(CCDelayTime::create(17.0),fadeOut,NULL));
-    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnLowFreqEnemy), 13.5);
-    initialDelay->setDuration(24.0);
-    tutorialText4->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
-    tutorialText4->runAction(CCSequence::create(CCDelayTime::create(27.0),fadeOut,NULL));
-    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnHighFreqEnemy), 24.0);
+    tutorialText3->runAction(CCSequence::create(CCDelayTime::create(14.5),fadeOut,NULL));
     initialDelay->setDuration(30.0);
     tutorialText5->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
     tutorialText5->runAction(CCSequence::create(CCDelayTime::create(32.0),fadeOut,NULL));
@@ -588,87 +597,179 @@ void SpaceSceneLayer::endTutorial()
     scoreLabel->setVisible(true);
 }
 
-void SpaceSceneLayer::spawnEnemy()
-{
-    double randDuration = winWidth/enemyVelocity;
-    int multiple = (int) floorf(randomValueBetweenD(0.0,11.0)); // Only generate harmonic pure-tones
-    float randFrequency = multiple * seed_freq;
+void SpaceSceneLayer::moveEnemy() {
     
-    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
+    // Init enemy
     CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
-    enemy->setOpacity(0);
-    
-    sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, visibleDelay, 0); // Add pure-tone
-    
+    enemy->setOpacity(255);
     enemy->stopAllActions();
+
+    float visibleDelay = (ccpDistance(playerShip->getPosition(), enemy->getPosition()) - radarRadius)/enemyVelocity;
+
+    // Animation seq
     CCAnimation *normal = animCache->animationByName("enemy");
     normal->setRestoreOriginalFrame(true);
     CCAnimate *animN = CCAnimate::create(normal);
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     
+    // Time appearance
     CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay);
     CCFadeIn *fade = CCFadeIn::create(0.01);
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
-
-    timeTargets[_nextAsteroid] = randDuration;
-
-    float tmp = TWOPI / 40.0;
     
+    double randDuration = ccpDistance(playerShip->getPosition(), enemy->getPosition())/enemyVelocity;
     CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
-    enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(multiple + 5)), winWidth * sin(tmp*(multiple + 5)))));
-    enemy->setRotation(-45.0 + (multiple/10.0)*90.0f);
-    enemy->runAction (moveSeq);
+
+    enemy->runAction(moveSeq);
+    enemy->setRotation(-45.0 + (enemyIndex/10.0)*90.0f);
     enemy->runAction(seq);
     enemy->runAction(fadeAnim);
     enemy->setVisible(true);
 }
 
-void SpaceSceneLayer::spawnEnemyAtLoc(float y)
+void SpaceSceneLayer::spawnEnemy()
 {
-    double randDuration = winWidth/enemyVelocity;
-    float randFrequency = y * seed_freq;
+    spawnEnemyAtLoc(enemyIndex,earIndex);
+}
+
+void SpaceSceneLayer::tutorialSpawn(int freqIndex, int earIndex)
+{
     
-    float tmp = TWOPI / 40.0;
-    
+    double randDuration = winWidth/enemyVelocity;   // Total travel duration
+    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
     float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
-    CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
-    enemy->setOpacity(0);
-    
-    sineTones[_nextAsteroid] = randFrequency;
-    toneGenHelp->addTone(randFrequency, visibleDelay, 0); // Add pure-tone
-    
+    float tmp = TWOPI / 40.0;
+    CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);  // Grab enemy object
     enemy->stopAllActions();
-    CCAnimation *normal = animCache->animationByName("enemy");
+    enemy->setOpacity(255);
+    enemy->setVisible(true);
+    if (earIndex) {
+        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth/2 * cos(tmp*(freqIndex + 4)), winWidth/2 * sin(tmp*(freqIndex + 4)))));
+        enemy->setRotation(45.0f - (freqIndex/10.0)*90.0f);
+    } else {
+        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth/2 * cos(tmp*(freqIndex + 4)), winWidth/2 * sin(tmp*(freqIndex + 4)))));
+        enemy->setRotation(-45.0f + (freqIndex/10.0)*90.0f);
+    }
+    sineTones[_nextAsteroid] = randFrequency;
+    timeTargets[_nextAsteroid] = randDuration;
+    toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
+    toneGenHelp->maxToneVolume();
+    
+    CCAnimation *normal = animCache->animationByName("enemy"); // Animation
     normal->setRestoreOriginalFrame(true);
     CCAnimate *animN = CCAnimate::create(normal);
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     
-    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay);
+    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay); // Invisibilty timer
     CCFadeIn *fade = CCFadeIn::create(0.01);
     CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
     
-    timeTargets[_nextAsteroid] = randDuration;
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL); // Movement Action
     
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
-    enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(y + 5)), winWidth * sin(tmp*(y + 5)))));
-    enemy->setRotation(-45.0 + (y/10.0)*90.0f);
+    // Run All Actions
     enemy->runAction (moveSeq);
     enemy->runAction(seq);
     enemy->runAction(fadeAnim);
-    enemy->setVisible(true);
+    
+}
+
+void SpaceSceneLayer::spawnRandomEnemy()
+{
+    enemyIndex = (int) floorf(randomValueBetweenD(0.0,6.0)); // Only generate harmonic pure-tones
+    earIndex = (int)(randomValueBetweenD(0.0,2.0));
+    spawnEnemyAtLoc(enemyIndex,earIndex);
+}
+
+void SpaceSceneLayer::spawn1_L()
+{
+    tutorialSpawn(1,0);
+}
+void SpaceSceneLayer::spawn2_L()
+{
+    tutorialSpawn(2,0);
+}
+void SpaceSceneLayer::spawn3_L()
+{
+    tutorialSpawn(3,0);
+}
+void SpaceSceneLayer::spawn4_L()
+{
+    tutorialSpawn(4,0);
+}
+void SpaceSceneLayer::spawn5_L()
+{
+    tutorialSpawn(5,0);
+}
+void SpaceSceneLayer::spawn1_R()
+{
+    tutorialSpawn(1,1);
+}
+void SpaceSceneLayer::spawn2_R()
+{
+    tutorialSpawn(2,1);
+}
+void SpaceSceneLayer::spawn3_R()
+{
+    tutorialSpawn(3,1);
+}
+void SpaceSceneLayer::spawn4_R()
+{
+    tutorialSpawn(4,1);
+}
+void SpaceSceneLayer::spawn5_R()
+{
+    tutorialSpawn(5,1);
 }
 
 void SpaceSceneLayer::spawnLowFreqEnemy()
 {
-    spawnEnemyAtLoc(1);
+    spawnEnemyAtLoc(1,0);
 }
 
 void SpaceSceneLayer::spawnHighFreqEnemy()
 {
-    spawnEnemyAtLoc(10);
+    spawnEnemyAtLoc(5,1);
+}
+
+void SpaceSceneLayer::spawnEnemyAtLoc(int freqIndex, int earIndex)
+{
+    double randDuration = winWidth/enemyVelocity;   // Total travel duration
+    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
+    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
+    
+    float tmp = TWOPI / 40.0;
+    CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);  // Grab enemy object
+    enemy->stopAllActions();
+    enemy->setOpacity(0);
+    enemy->setVisible(true);
+    if (earIndex) {
+        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(tmp*(freqIndex + 4)), winWidth * sin(tmp*(freqIndex + 4)))));
+        enemy->setRotation(45.0f - (freqIndex/10.0)*90.0f);
+    } else {
+        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(freqIndex + 4)), winWidth * sin(tmp*(freqIndex + 4)))));
+        enemy->setRotation(-45.0 + (freqIndex/10.0)*90.0f);
+    }
+    sineTones[_nextAsteroid] = randFrequency;
+    timeTargets[_nextAsteroid] = randDuration;
+    toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
+    
+    CCAnimation *normal = animCache->animationByName("enemy"); // Animation
+    normal->setRestoreOriginalFrame(true);
+    CCAnimate *animN = CCAnimate::create(normal);
+    CCRepeatForever *seq = CCRepeatForever::create(animN);
+    
+    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay); // Invisibilty timer
+    CCFadeIn *fade = CCFadeIn::create(0.01);
+    CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
+    
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL); // Movement Action
+
+    // Run All Actions
+    enemy->runAction (moveSeq); 
+    enemy->runAction(seq);
+    enemy->runAction(fadeAnim);
 }
 
 void SpaceSceneLayer::spawnAsteroid()
@@ -859,7 +960,7 @@ void SpaceSceneLayer::nextLevel()
     if (radarRadius > winWidth/10) {
         radarRadius -= winWidth/10;
     } else {
-        enemyVelocity += 10;
+        //enemyVelocity += 10;
     }
     
     stringstream tempString;
@@ -922,6 +1023,7 @@ void PauseSceneLayer::resumeCallback(CCObject* pSender)
 {
     ((SpaceScene *)(this->getParent()))->RecursivelyResumeAllChildren(this->getParent());
     ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableTones();
+    ((SpaceScene *)(this->getParent()))->pauseButton->setEnabled(true);
     this->removeFromParentAndCleanup(true);
 }
 
@@ -997,12 +1099,12 @@ SpaceScene::SpaceScene()
 {
     CCScene::init();
         
-    CCMenuItemImage* pMenuItem = CCMenuItemImage::create("glyphicons_174_pause.png", "glyphicons_174_pause.png", this, menu_selector(SpaceScene::pauseMenuCallback) );
-    pMenuItem->setScale(2.0);
-    CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
+    pauseButton = CCMenuItemImage::create("glyphicons_174_pause.png", "glyphicons_174_pause.png", this, menu_selector(SpaceScene::pauseMenuCallback) );
+    pauseButton->setScale(2.0);
+    CCMenu *pMenu =CCMenu::create(pauseButton, NULL);
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     pMenu->setPosition(CCPointZero);
-    pMenuItem->setPosition( ccp(s.width*0.95,s.height*0.95) );
+    pauseButton->setPosition( ccp(s.width*0.95,s.height*0.95) );
     
     addChild(pMenu, 1);
 }
@@ -1149,6 +1251,7 @@ void SpaceScene::pauseMenuCallback(CCObject* pSender)
 {
     CCLayer* pauseLayer = new PauseSceneLayer();
     addChild(pauseLayer);
+    ((CCMenuItem *)pSender)->setEnabled(false);
     RecursivelyPauseAllChildren((CCNode *)this->getChildren()->objectAtIndex(0));
     ((SpaceScene *)(this->getChildren()->objectAtIndex(0)))->pauseSchedulerAndActions();
     this->getToneGenerator()->disableTones();

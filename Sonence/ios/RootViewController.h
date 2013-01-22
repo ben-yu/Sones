@@ -11,21 +11,30 @@
 #include "cocos2d.h"
 #include "SpaceScene.h"
 
+
 @interface RootViewController : UIViewController {
+    struct DataPoint {
+        float freq;
+        float vol;
+        int channel;
+    };
 
 }
+
 
 @property cocos2d::CCDirector *pDirector;
 @property SpaceScene *sceneptr;
 @property cocos2d::CCScene *scenePointers;
 @property NSInteger gameType;
+@property NSInteger numOfDataPoints;
 @property (nonatomic, retain) NSManagedObjectContext *managedObjectContext;
 @property (nonatomic, retain) NSManagedObjectModel *managedObjectModel;
 @property (nonatomic, retain) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
 -(void)storeDataPoint:(NSString*) identifier
            freqThresh:(double) freq
-            volThresh:(double) vol;
--(NSMutableArray *)getData;
+            volThresh:(double) vol
+         audioChannel:(int) channel;
+-(iOSBridge::DataPoint *)getData;
 
 @end

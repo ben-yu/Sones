@@ -55,12 +55,18 @@ public:
     
     void playTutorial();
     void endTutorial();
+    void tutorialSpawn(int freqIndex, int earIndex);
     void spawnEnemy();
-    void spawnEnemyAtLoc(float y);
+    void spawnRandomEnemy();
+    void moveEnemy();
+    void spawnEnemyAtLoc(int freqIndex, int earIndex);
     void spawnLowFreqEnemy();
     void spawnHighFreqEnemy();
     void spawnAsteroid();
     void nextLevel();
+    
+    void spawn1_L(); void spawn2_L(); void spawn3_L(); void spawn4_L(); void spawn5_L();
+    void spawn1_R(); void spawn2_R(); void spawn3_R(); void spawn4_R(); void spawn5_R();
     
     CREATE_FUNC(SpaceSceneLayer);
         
@@ -131,6 +137,8 @@ private:
     int _nextAsteroid;
     int _curAsteroidCount;
     int asteroidIndex;
+    int enemyIndex = 0;
+    int earIndex = 0;
     int destroyedAsteroids;
     float _nextAsteroidSpawn = 0.0;
     int _nextShipLaser = 0;
@@ -174,6 +182,7 @@ public:
     void RecursivelyResumeAllChildren(CCNode* node);
     
     void *rootVC;
+    CCMenuItemImage *pauseButton;
         
 private:
     CCScene* mainMenuPtr;

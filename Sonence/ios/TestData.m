@@ -13,6 +13,7 @@
 
 @dynamic freq;
 @dynamic volume;
+@dynamic channel;
 @dynamic session;
 
 @end

@@ -8,6 +8,7 @@
 
 #include "MainMenu.h"
 #include "SpaceScene.h"
+#include "SpacePhysics.h"
 
 #define TRANSITION_DURATION (1.2f)
 
@@ -127,7 +128,7 @@ LevelLayer::LevelLayer()
     item2->setScale(0.05 * s.width/640);
     item3->setScale(0.05 * s.width/640);
     
-    item2->setEnabled(false);
+    //item2->setEnabled(false);
     item3->setEnabled(false);
 
     CCMenu *menu = CCMenu::create(item1, item2, item3, NULL);
@@ -138,8 +139,8 @@ LevelLayer::LevelLayer()
     item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.05*item2->getContentSize().width*2));
     
     CCLabelTTF *item1Label = CCLabelTTF::create("Target Practice", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders - Work in Progress", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item3Label = CCLabelTTF::create("3D Sounds - Work in Progress", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item3Label = CCLabelTTF::create("3D Sounds", "PressStart2P-Regular", 12.0);
     
     item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.05*item2->getContentSize().width*2));
     item2Label->setPosition(CCPointMake(s.width/2, s.height/2));

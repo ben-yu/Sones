@@ -14,6 +14,7 @@
 
 @property (nonatomic, retain) NSNumber * freq;
 @property (nonatomic, retain) NSNumber * volume;
+@property (nonatomic, retain) NSNumber * channel;
 @property (nonatomic, retain) NSString * session;
 
 @end

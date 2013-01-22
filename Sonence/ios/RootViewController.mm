@@ -19,6 +19,7 @@
 @synthesize pDirector = _pDirector;
 @synthesize sceneptr = _sceneptr;
 @synthesize gameType;
+@synthesize numOfDataPoints = _numOfDataPoints;
 @synthesize managedObjectContext = _managedObjectContext;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -157,16 +158,18 @@
 -(void)storeDataPoint:(NSString*) identifier
            freqThresh:(double) freq
             volThresh:(double) vol
+         audioChannel:(int) channel
 {
     TestData *dataPoint = (TestData *)[NSEntityDescription insertNewObjectForEntityForName:@"TestData" inManagedObjectContext:self.managedObjectContext];
     [dataPoint setFreq:[NSNumber numberWithDouble:freq]];
     [dataPoint setVolume:[NSNumber numberWithDouble:vol]];
+    [dataPoint setChannel:[NSNumber numberWithDouble:channel]];
     [dataPoint setSession:identifier];
 
     [self.managedObjectContext save:nil];
 }
 
--(NSMutableArray *)getData
+-(iOSBridge::DataPoint *)getData
 {
     NSManagedObjectContext *moc = [self managedObjectContext];
     NSEntityDescription *entityDescription = [NSEntityDescription
@@ -180,11 +183,16 @@
     NSError *error;
     NSArray *reqData = [moc executeFetchRequest:request error:&error];
     NSMutableArray *data = [NSMutableArray array];
-    for (TestData *a in reqData){
-        [data addObject:[NSValue valueWithCGPoint:CGPointMake([a.freq floatValue], [a.volume floatValue])]];
+    _numOfDataPoints = [reqData count];
+    iOSBridge::DataPoint *tmp = (iOSBridge::DataPoint *)malloc(sizeof(iOSBridge::DataPoint)*_numOfDataPoints);
+    for (int i = 0; i < _numOfDataPoints; i++){
+        tmp[i].freq = [((TestData *) [reqData objectAtIndex:i]).freq floatValue];
+        tmp[i].vol = [((TestData *) [reqData objectAtIndex:i]).volume floatValue];
+        tmp[i].channel = [((TestData *) [reqData objectAtIndex:i]).channel integerValue];
+        [data addObject:[NSValue value:&tmp[i] withObjCType:@encode(iOSBridge::DataPoint)]];
     }
     
-    return data;
+    return tmp;
 }
 
 

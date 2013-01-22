@@ -70,6 +70,16 @@ namespace iOSBridge{
         [((ToneGenerator_objc *)toneGenerator_objc)   PauseTone];
     }
     
+    void ToneGeneratorHelper::maxToneVolume()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   MaxTone];
+    }
+    
+    void ToneGeneratorHelper::playExplosion()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   playExplosion];
+    }
+    
     void ToneGeneratorHelper::stop()
     {
         [((ToneGenerator_objc *)toneGenerator_objc)   Stop];

@@ -14,7 +14,7 @@
 #define SRATE 44100
 #define FRAMESIZE 128
 #define NUMCHANNELS 2
-#define DBOFFSET -74.0 
+#define DBOFFSET 98.0 
 
 @interface ToneGenerator_objc()
 @end
@@ -25,7 +25,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     
     for(int i=0; i<framesize; i++)
     {
-        SAMPLE outz;
+        SAMPLE outz, fx;
         if (data->backgroundEnabled) {
             outz = data->backgroundMusic->tick();
         } else {
@@ -35,11 +35,31 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
         for (int j=0; j < data->numAsteroids; j++) {
             if (data->fxEnabled) {
                 Float32 amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[j]->tick() - 98.0)/20.0)));
-                outz += amp * data->sineWaves[j]->tick();
+                if (!data->maxVol)
+                    fx = amp * data->sineWaves[j]->tick();
+                else
+                    fx = data->sineWaves[j]->tick();
+                if (data->playExplosion)
+                    outz += data->explosion->tick();
+                if (data->explosion->isFinished()) {
+                    data->playExplosion = false;
+                    data->explosion->reset();
+                }
             }
         }
-        
-        buffer[2*i] = buffer[2*i+1] = outz;
+        switch (data->toneIndex) {
+            case 0:
+                buffer[2*i] = outz + fx;
+                buffer[2*i+1] = outz;
+                break;
+            case 1:
+                buffer[2*i] = outz;
+                buffer[2*i+1] = outz + fx;
+                break;
+            default:
+                buffer[2*i] = buffer[2*i+1] = outz + fx;
+                break;
+        }
     }
 }
 
@@ -57,6 +77,8 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
         audioData.backgroundMusic = new FileLoop(std::string([myFile UTF8String]));
         audioData.myAsymp = (Envelope **) calloc(sizeof(void *), numOfAsteroids);
         audioData.sineWaves = (BlitSaw **) calloc(sizeof(void *), numOfAsteroids);
+        myFile = [mainBundle pathForResource: @"explosion" ofType: @"wav"];
+        audioData.explosion = new FileWvIn(std::string([myFile UTF8String]));
         for (int i=0; i<numOfAsteroids; i++) {
             audioData.sineWaves[i] = new BlitSaw();
             audioData.myAsymp[i] = new Envelope();
@@ -172,14 +194,23 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
          timeConst:(double) duration
          toneNum:(int) index
 {
-    audioData.sineWaves[index]->setFrequency(frequency);
-    audioData.myAsymp[index]->setTarget(1.0);
-    audioData.myAsymp[index]->setTime(duration);
+    audioData.sineWaves[0]->setFrequency(frequency);
+    audioData.myAsymp[0]->setTarget(1.0);
+    audioData.myAsymp[0]->setTime(duration);
+    audioData.toneIndex = index;
+    audioData.maxVol = false;
 }
 
 - (void) PauseTone
 {
     audioData.fxEnabled = false;
+}
+
+- (void) MaxTone
+{
+    //audioData.myAsymp[0]->setValue(1.0);
+    //audioData.myAsymp[0]->setRate(0.0);
+    audioData.maxVol = true;
 }
 
 - (void) ResumeTone
@@ -189,11 +220,16 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 
 - (NSNumber *) RemoveTone:(int) index
 {
-    audioData.sineWaves[index]->setFrequency(0.0);
-    audioData.sineWaves[index]->reset();
-    NSNumber *tmp = [[NSNumber alloc] initWithFloat: audioData.myAsymp[index]->tick()];
-    audioData.myAsymp[index]->setTime(0.0);
-    audioData.myAsymp[index]->setTarget(0.0);
+    audioData.sineWaves[0]->setFrequency(0.0);
+    audioData.sineWaves[0]->reset();
+    NSNumber *tmp = [[NSNumber alloc] initWithFloat: 98.0 * audioData.myAsymp[index]->tick()];
+    audioData.myAsymp[0]->setTime(0.0);
+    audioData.myAsymp[0]->setTarget(0.0);
     return tmp;
+}
+
+- (void) playExplosion
+{
+    audioData.playExplosion = true;
 }
 @end

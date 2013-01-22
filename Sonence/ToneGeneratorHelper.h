@@ -29,6 +29,9 @@ class  ToneGeneratorHelper {
         void stop();
         void enableTones();
         void disableTones();
+        void maxToneVolume();
+        void playExplosion();
+    
     private:
         void* toneGenerator_objc;
     };

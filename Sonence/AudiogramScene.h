@@ -23,6 +23,7 @@ public:
     virtual void draw();
     virtual void onEnter();
     void backCallback(CCObject* sender);
+    void earCallback(CCObject* sender);
     
     iOSBridge::DataPoint *displayData;
     iOSBridge::DataStore *dsPtr;
@@ -33,6 +34,10 @@ private:
     float winWidth;
     float winHeight;
     
+    float xScale;
+    float yScale;
+    
+    int displayedChannel;
 };
 
 #endif /* defined(__Sonence__AudiogramScene__) */

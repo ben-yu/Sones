@@ -28,9 +28,13 @@ struct AudioData{
     Envelope **myAsymp;
     BlitSaw **sineWaves;
     FileLoop *backgroundMusic;
+    FileWvIn *explosion;
     int numAsteroids;
+    int toneIndex; // 0 - L , 1 - R, 2 - Both
     BOOL backgroundEnabled = true;
     BOOL fxEnabled = true;
+    BOOL playExplosion = false;
+    BOOL maxVol = false;
 };
 
 @interface ToneGenerator_objc : NSObject {
@@ -55,5 +59,7 @@ struct AudioData{
 - (NSNumber *) RemoveTone:(int) index;
 - (void) ResumeTone;
 - (void) PauseTone;
+- (void) MaxTone;
+- (void) playExplosion;
 
 @end
