@@ -9,7 +9,11 @@
 #ifndef __Sonence__DataStore__
 #define __Sonence__DataStore__
 
+#include <iostream.h>
+
 namespace iOSBridge{
+    
+    using namespace std;
     
     struct DataPoint {
         float freq;
@@ -26,7 +30,7 @@ namespace iOSBridge{
         DataStore();
         ~DataStore();
         
-        void saveData(double freq, double volume, int channel);
+        void saveData(std::string name, double freq, double volume, int channel, int attempts, double init_time, double final_time);
         DataPoint* readData();
         
         DataPoint* returnData;

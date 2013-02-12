@@ -34,13 +34,13 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     score = 0;
     distLabel = CCLabelTTF::create("0m", "PressStart2P-Regular", 12.0);
     scoreLabel = CCLabelTTF::create("Score: 0", "PressStart2P-Regular", 12.0);
+    livesLabel = CCLabelTTF::create("x 3", "PressStart2P-Regular", 12.0);
     tutorialText = CCLabelTTF::create("", "Audiowide-Regular", 30.0);
     tutorialText2 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     tutorialText3 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     tutorialText4 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
     tutorialText5 = CCLabelTTF::create("", "PressStart2P-Regular", 8.0);
-    
-
+        
     distLabel->setPosition(ccp(winHeight*0.7,winWidth*0.95));
     this->addChild(distLabel, 1);
     distLabel->setVisible(false);
@@ -48,6 +48,10 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     scoreLabel->setPosition(ccp(winHeight*0.5, winWidth*0.95));
     this->addChild(scoreLabel, 1);
     scoreLabel->setVisible(false);
+    
+    livesLabel->setPosition(ccp(winHeight*0.2, winWidth*0.9));
+    this->addChild(livesLabel, 1);
+    livesLabel->setVisible(false);
     
     tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
     tutorialText2->setPosition(ccp(winHeight/2, winWidth/2 ));
@@ -89,7 +93,7 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     tutorialText4->setVisible(false);
     
     tempString.str("");
-    tempString<<"Avoid shooting the red boxes!";
+    tempString<<"Good Luck!";
     tutorialText5->setString(tempString.str().c_str());
     tutorialText5->setColor(ccc3(0, 255, 0));
     tutorialText5->setHorizontalAlignment(kCCTextAlignmentCenter);
@@ -167,6 +171,13 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     CCRepeatForever *seq = CCRepeatForever::create(animN);
     playerShip->runAction(seq);
     
+    CCSprite *lifeSprite = CCSprite::create();
+    lifeSprite->setDisplayFrame(frame);
+    lifeSprite->setPosition(ccp(winHeight*0.15, winWidth*0.9));
+    lifeSprite->setScale(0.8);
+    addChild(lifeSprite);
+    lifeSprite->setVisible(true);
+    
     // Set ship sprite and pos
     playerPos = ccp(winHeight * 0.5, winWidth * 0.1);
     playerShip->setPosition(playerPos);
@@ -187,12 +198,13 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     hpBar->setMidpoint(ccp(0,0));
     //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
     hpBar->setBarChangeRate(ccp(1, 0));
-    hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.945));
+    hpBar->setPosition(ccp(winHeight*0.13,winWidth*0.96));
     hpBar->setScaleX(0.9);
     hpBar->setScaleY(0.25);
     
     healthBar = CCSprite::create("health.png");
     healthBar->setPosition(ccp(winHeight*0.13,winWidth*0.95));
+    healthBar->setFlipY(true);
     addChild(healthBar);
     addChild(hpBar);
     
@@ -231,6 +243,7 @@ SpaceSceneLayer::SpaceSceneLayer(void)
     _backgroundNode->addChild(_spacialanomaly,-1, bgSpeed,ccp(winWidth * 0.3,1000));
     _backgroundNode->addChild(_spacialanomaly2,-1, bgSpeed,ccp(winWidth * 0.9,1200));
     
+    _spacedust2->setFlipY(true);
         
     //////////////////////////////
     //
@@ -291,17 +304,16 @@ void SpaceSceneLayer::onEnter()
     this->setTouchEnabled(true); // Enable Touch
     
     this->scheduleUpdate(); // Start updating
-    seed_freq = floorf(randomValueBetween(250.0,600.0));
+    seed_freq = floorf(randomValueBetween(0.0,1550.0));
     
     tutorialDuration = 10 * 1000.0;
     radarRadius = winWidth/2;
-    enemyVelocity = winWidth/15.0;
+    enemyVelocity = winWidth/20.0;
     playedTutorial = false;
     if (!playedTutorial) {
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::playTutorial), 2.0);
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::endTutorial), 35.0);
     }
-    initTime = getTimeTick();
     
     _nextAsteroid = 0;
     _curAsteroidCount = 0;
@@ -313,7 +325,7 @@ void SpaceSceneLayer::update(float dt) {
     
     CCSize winSize = CCDirector::sharedDirector()->getWinSize();
     
-    if (_health <= 0 && !gameOver) {
+    if (lives <= 0 && !gameOver) {
         gameOver = true;
         tutorialText = CCLabelTTF::create("GAME OVER!", "Audiowide-Regular", 30.0);
         tutorialText->setPosition(ccp(winHeight/2, winWidth/2));
@@ -377,13 +389,14 @@ void SpaceSceneLayer::update(float dt) {
         
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnRandomEnemy), 2.0 - spawnRate);
     }
-    
+    /*
     if ((_curAsteroidCount < KNUMASTEROIDS || _nextAsteroid != 0 )&& playedTutorial) {
         _curAsteroidCount++;
         float spawnRate = randomValueBetween(0.1,0.3);
         
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawnAsteroid), spawnRate);
     }
+    */
     
     //////////////////////////////
     //
@@ -428,6 +441,10 @@ void SpaceSceneLayer::update(float dt) {
             if ( ! shipLaser->isVisible() )
                 continue ;
             if (shipLaser->boundingBox().intersectsRect(enemy->boundingBox())) {
+                
+                touchTimerFlag = false;
+                finalTime = getTimeTick() - initTime;
+                
                 shipLaser->setVisible(false);
                 enemy->setVisible(false);
                 setEnemyInvisible(enemy);
@@ -435,7 +452,7 @@ void SpaceSceneLayer::update(float dt) {
                 float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
-                dataStoreHandler->saveData((double) sineTones[index], (double) tmpVol, earIndex);
+                dataStoreHandler->saveData("Target_Practice",(double) sineTones[index],  (double) (toneGenHelp->getVolume() * tmpVol), earIndex, touchAttempts,touchTime, finalTime);
                 
                 //char json[100];
                 //sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
@@ -451,7 +468,7 @@ void SpaceSceneLayer::update(float dt) {
                 
                 toneGenHelp->playExplosion();
                 
-                if (score % 100 == 0) {
+                if (score % 50 == 0) {
                     nextLevel();
                 }
                 continue ;
@@ -465,8 +482,8 @@ void SpaceSceneLayer::update(float dt) {
             playerShip->runAction( CCBlink::create(1.0, 5));
             alphaTargets[index] = 0.0;
             enemySpawned = false;
-            _health -= 10.0;
-            hpBar->setPercentage(_health);
+            lives -= 1;
+            //hpBar->setPercentage(_health);
         }
         index++;
     }
@@ -494,6 +511,15 @@ void SpaceSceneLayer::update(float dt) {
     if (playedTutorial) {
         distance++;
     }
+    
+    if (_health == 0 && !reloading) {
+        reloading = true;
+        this->scheduleOnce(schedule_selector(SpaceSceneLayer::reload),reloadTime);
+        hpBar->runAction(CCProgressFromTo::create(reloadTime, 0.0, 100.0));
+    }
+    if (_health == 100) {
+        reloading = false;
+    }
         
     stringstream tempString;
     tempString<<distance<<"m";
@@ -503,8 +529,13 @@ void SpaceSceneLayer::update(float dt) {
     tempString<<"Score: "<< score;
     scoreLabel->setString(tempString.str().c_str());
     
+    tempString.str("");
+    tempString<<" x "<< lives;
+    livesLabel->setString(tempString.str().c_str());
+    
     distLabel->setVisible(true);
     scoreLabel->setVisible(true);
+    livesLabel->setVisible(true);
 }
 
 void SpaceSceneLayer::draw(){
@@ -519,13 +550,12 @@ void SpaceSceneLayer::draw(){
         ccDrawCircle( playerShip->getPosition(), winWidth/10 * i, 0, 50, false);
     }
     
-    int max = 40;
     float tmp = TWOPI / 40.0;
     int i, n = 120;
     float da, ga, a, b;
-    int dt = (int)(getTimeTick()/10) % n;
+    int dt = (int)(getTimeTick()/60.0) % n;
     ccDrawColor4F(0.0, 1.0, 1.0, 0.3);
-    for (int i = 0; i < max; i++)  {
+    for (int i = 4; i < 17; i++)  {
         a = (float)i * tmp;
         ccDrawLine(playerShip->getPosition(), ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(a), winWidth * sin(a))));
     }
@@ -549,6 +579,14 @@ void SpaceSceneLayer::playTutorial()
 {
     distLabel->setVisible(false);
     scoreLabel->setVisible(false);
+    
+    CCLabelTTF* skipLabel = CCLabelTTF::create("Skip", "Ubuntu-Regular", 12);
+    CCMenuItemLabel *tutorialSkipButtonItem = CCMenuItemLabel::create(skipLabel, this, menu_selector(SpaceSceneLayer::endTutorial));
+    tutorialSkipButton = CCMenu::create(tutorialSkipButtonItem,NULL);
+    
+    tutorialSkipButton->setPosition(ccp(winHeight*0.5,winWidth*0.2));
+    tutorialSkipButton->setVisible(true);
+    addChild(tutorialSkipButton);
     
     CCFiniteTimeAction *fadeIn = CCFadeIn::create(1.0);
     fadeIn->setDuration(1.0);
@@ -593,8 +631,32 @@ void SpaceSceneLayer::playTutorial()
 void SpaceSceneLayer::endTutorial()
 {
     playedTutorial = true;
+    tutorialSkipButton->setVisible(false);
+    removeChild(tutorialSkipButton, true);
     distLabel->setVisible(true);
     scoreLabel->setVisible(true);
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn1_L));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn2_L));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn3_L));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn4_L));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn5_L));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn1_R));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn2_R));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn3_R));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn4_R));
+    this->unschedule(schedule_selector(SpaceSceneLayer::spawn5_R));
+    this->unschedule(schedule_selector(SpaceSceneLayer::endTutorial));
+    tutorialText->stopAllActions(); 
+    tutorialText2->stopAllActions();
+    tutorialText3->stopAllActions();
+    tutorialText4->stopAllActions();
+    tutorialText5->stopAllActions();
+    tutorialText->setVisible(false);
+    tutorialText2->setVisible(false);
+    tutorialText3->setVisible(false);
+    tutorialText4->setVisible(false);
+    tutorialText5->setVisible(false);
+
 }
 
 void SpaceSceneLayer::moveEnemy() {
@@ -628,6 +690,10 @@ void SpaceSceneLayer::moveEnemy() {
     enemy->setVisible(true);
 }
 
+void SpaceSceneLayer::reload() {
+    _health = 100;
+}
+
 void SpaceSceneLayer::spawnEnemy()
 {
     spawnEnemyAtLoc(enemyIndex,earIndex);
@@ -637,7 +703,7 @@ void SpaceSceneLayer::tutorialSpawn(int freqIndex, int earIndex)
 {
     
     double randDuration = winWidth/enemyVelocity;   // Total travel duration
-    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
+    float randFrequency = freqIndex * 1550.0 + seed_freq;    // Calculate frequency
     float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     float tmp = TWOPI / 40.0;
@@ -680,6 +746,10 @@ void SpaceSceneLayer::spawnRandomEnemy()
     enemyIndex = (int) floorf(randomValueBetweenD(0.0,6.0)); // Only generate harmonic pure-tones
     earIndex = (int)(randomValueBetweenD(0.0,2.0));
     spawnEnemyAtLoc(enemyIndex,earIndex);
+    touchTimerFlag = true;
+    initTime = getTimeTick();
+    touchAttempts = 0;
+    
 }
 
 void SpaceSceneLayer::spawn1_L()
@@ -736,7 +806,7 @@ void SpaceSceneLayer::spawnHighFreqEnemy()
 void SpaceSceneLayer::spawnEnemyAtLoc(int freqIndex, int earIndex)
 {
     double randDuration = winWidth/enemyVelocity;   // Total travel duration
-    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
+    float randFrequency = freqIndex * 1550.0 + seed_freq;    // Calculate frequency
     float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     float tmp = TWOPI / 40.0;
@@ -883,22 +953,31 @@ void SpaceSceneLayer::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* 
     
     //Calulate angle between ship and touch position
     float shot_angle = atan2f(mean_touch.y - pos.y,mean_touch.x - pos.x);
+    if (_health > 0) {
+        pos.setPoint(pos.x - 15, pos.y);
+        CCSize winSize = CCDirector::sharedDirector()->getWinSize() ;
+        CCSprite *shipLaser = (CCSprite *) _shipLasers->objectAtIndex(_nextShipLaser++);
+        shipLaser->setRotation(shot_angle * (-180/3.14159));
+        playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
+        if ( _nextShipLaser >= _shipLasers->count() )
+            _nextShipLaser = 0;
+        shipLaser->setPosition( ccpAdd( pos, ccp(shipLaser->getContentSize().width/2, 0)));
+        shipLaser->setVisible(true) ;
+        shipLaser->stopAllActions() ;
+        shipLaser->runAction( CCSequence::create (
+                                                  CCMoveTo::create(0.5,ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(shot_angle), winWidth * sin(shot_angle)))),
+                                                  CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setInvisible)) ,
+                                                  NULL  // DO NOT FORGET TO TERMINATE WITH NULL
+                                                  ) ) ;
+        _health -= 20;
+        hpBar->setPercentage(_health);
+    }
     
-    pos.setPoint(pos.x - 15, pos.y);
-    CCSize winSize = CCDirector::sharedDirector()->getWinSize() ;
-    CCSprite *shipLaser = (CCSprite *) _shipLasers->objectAtIndex(_nextShipLaser++);
-    shipLaser->setRotation(shot_angle * (-180/3.14159));
-    playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
-    if ( _nextShipLaser >= _shipLasers->count() )
-        _nextShipLaser = 0;
-    shipLaser->setPosition( ccpAdd( pos, ccp(shipLaser->getContentSize().width/2, 0)));
-    shipLaser->setVisible(true) ;
-    shipLaser->stopAllActions() ;
-    shipLaser->runAction( CCSequence::create (
-                                              CCMoveTo::create(0.5,ccp(mean_touch.x,mean_touch.y)),
-                                              CCCallFuncN::create(this,callfuncN_selector(SpaceSceneLayer::setInvisible)) ,
-                                              NULL  // DO NOT FORGET TO TERMINATE WITH NULL
-                                              ) ) ;
+    if (touchTimerFlag) {
+        touchTime = getTimeTick() - initTime; // Initial Reaction Time
+        touchTimerFlag = false;
+    }
+    touchAttempts++;
 }
 
 void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
@@ -959,8 +1038,9 @@ void SpaceSceneLayer::nextLevel()
 {
     if (radarRadius > winWidth/10) {
         radarRadius -= winWidth/10;
+        reloadTime += 1.0;
     } else {
-        //enemyVelocity += 10;
+        enemyVelocity += 10;
     }
     
     stringstream tempString;
@@ -975,6 +1055,7 @@ void SpaceSceneLayer::nextLevel()
     CCFiniteTimeAction *fadeOut = CCFadeOut::create(1.0);
     fadeOut->setDuration(1.0);
     
+    tutorialText->setColor(ccc3(0,0,255));
     tutorialText->runAction(CCSequence::create (fadeIn,waitDelay,fadeOut,fadeIn,waitDelay,fadeOut,NULL));
     
     level++;
@@ -1128,7 +1209,7 @@ void SpaceScene::runGame()
     
     switch (gameMode) {
         case 1:
-            ((SpaceSceneLayer *) pLayer)->setAccelerometerEnabled(true);
+            ((SpaceSceneLayer *) pLayer)->setAccelerometerEnabled(false);
             break;
             
         default:

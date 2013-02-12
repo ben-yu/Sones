@@ -18,7 +18,8 @@
         float vol;
         int channel;
     };
-
+    
+    iOSBridge::DataPoint *dataptr;
 }
 
 
@@ -34,7 +35,10 @@
 -(void)storeDataPoint:(NSString*) identifier
            freqThresh:(double) freq
             volThresh:(double) vol
-         audioChannel:(int) channel;
+         audioChannel:(int) channel
+             attempts:(int) tapCounts
+         reactionTime:(double) initTime
+             lastTime:(double) finalTime;
 -(iOSBridge::DataPoint *)getData;
 
 @end

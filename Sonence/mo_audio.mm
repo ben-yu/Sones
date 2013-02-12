@@ -59,12 +59,14 @@
 #include "mo_audio.h"
 #include <AudioToolbox/AudioToolbox.h>
 
+#define kOutputBus 0
+#define kInputBus 1
 
 // static member initialization
 bool MoAudio::m_hasInit = false;
 bool MoAudio::m_isRunning = false;
 bool MoAudio::m_isMute = false;
-bool MoAudio::m_handleInput = false;
+bool MoAudio::m_handleInput = true;
 Float64 MoAudio::m_srate = 44100.0;
 Float64 MoAudio::m_hwSampleRate = 44100.0;
 UInt32 MoAudio::m_frameSize = 0;
@@ -74,14 +76,16 @@ MoAudioUnitInfo * MoAudio::m_info = NULL;
 MoCallback MoAudio::m_callback = NULL;
 // Float32 * MoAudio::m_buffer = NULL;
 // UInt32 MoAudio::m_bufferFrames = 2048;
+AURenderCallbackStruct MoAudio::m_inputProc;
 AURenderCallbackStruct MoAudio::m_renderProc;
 void * MoAudio::m_bindle = NULL;
+AudioBufferList * MoAudio::inputBuffer = NULL;
 
 // number of buffers
 #define MO_DEFAULT_NUM_BUFFERS   3
 
 // prototypes
-bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderProc,
+bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inInputProc, AURenderCallbackStruct inRenderProc,
                     AudioStreamBasicDescription & outFormat);
 
 
@@ -94,8 +98,6 @@ void silenceData( AudioBufferList * inData )
     for( UInt32 i = 0; i < inData->mNumberBuffers; i++ )
         memset( inData->mBuffers[i].mData, 0, inData->mBuffers[i].mDataByteSize );
 }
-
-
 
 
 //-----------------------------------------------------------------------------
@@ -156,8 +158,35 @@ void convertFromUser( AudioBufferList * inData, Float32 * buffy, UInt32 numFrame
     }
 }
 
-
-
+static OSStatus SMALLInputProc(
+                                void * inRefCon,
+                                AudioUnitRenderActionFlags * ioActionFlags,
+                                const AudioTimeStamp * inTimeStamp,
+                                UInt32 inBusNumber,
+                                UInt32 inNumberFrames, 
+                                AudioBufferList * ioData ) 
+{
+    OSStatus err = noErr;
+    
+    // render if full-duplex available and enabled
+    if( MoAudio::m_handleInput )
+    {
+        
+        err = AudioUnitRender(MoAudio::m_au,
+                                 ioActionFlags,
+                                 inTimeStamp,
+                                 inBusNumber,
+                                 inNumberFrames,
+                                MoAudio::inputBuffer);        
+        if( err )
+        {
+            // print error
+            printf( "MoAudio: render procedure encountered error %d\n", (int)err );
+            return err;
+        }
+    }
+    return err;
+}
 
 //-----------------------------------------------------------------------------
 // name: SMALLRenderProc()
@@ -172,18 +201,6 @@ static OSStatus SMALLRenderProc(
     AudioBufferList * ioData ) 
 {
     OSStatus err = noErr;
-
-    // render if full-duplex available and enabled
-    if( MoAudio::m_handleInput )
-    {
-        err = AudioUnitRender( MoAudio::m_au, ioActionFlags, inTimeStamp, 1, inNumberFrames, ioData );
-        if( err )
-        {
-            // print error
-            printf( "MoAudio: render procedure encountered error %d\n", (int)err );
-            return err;
-        }
-    }
 
     // actual frames
     UInt32 actualFrames = 0;
@@ -257,7 +274,7 @@ static void propListener( void * inClientData, AudioSessionPropertyID inID,
         }
         
         // set up
-        setupRemoteIO( MoAudio::m_au, MoAudio::m_renderProc, MoAudio::m_info->m_dataFormat );
+        setupRemoteIO( MoAudio::m_au, MoAudio::m_inputProc, MoAudio::m_renderProc, MoAudio::m_info->m_dataFormat );
             
         UInt32 size = sizeof(MoAudio::m_hwSampleRate);
         // get sample rate
@@ -311,7 +328,7 @@ static void propListener( void * inClientData, AudioSessionPropertyID inID,
 // name: setupRemoteIO()
 // desc: setup Audio Unit Remote I/O
 //-----------------------------------------------------------------------------
-bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderProc,
+bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inInputProc, AURenderCallbackStruct inRenderProc,
                     AudioStreamBasicDescription & outFormat )
 {
     // open the output unit
@@ -328,8 +345,10 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
     // status code
     OSStatus err;
     
-    // the stream description
+    // stream descriptions
     AudioStreamBasicDescription localFormat;
+    AudioStreamBasicDescription inputFormat;
+
     
     // open remote I/O unit
     err = AudioComponentInstanceNew( comp, &inRemoteIOUnit );
@@ -339,25 +358,28 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
         return false;
     }
 
-    UInt32 one = 1;
-    // enable input
-/*    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_EnableIO,
-                                kAudioUnitScope_Input, 1, &one, sizeof(one) );
+    UInt32 flag = 1;
+    if (MoAudio::m_handleInput) {
+        // enable i/o for recording
+        err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_EnableIO,
+                                    kAudioUnitScope_Input, kInputBus, &flag, sizeof(flag) );
+        if( err )
+        {
+            // TODO: "couldn't enable input on the remote I/O unit"
+            return false;
+        }
+    }
+    
+    // enable i/o for playback
+    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_EnableIO,
+                               kAudioUnitScope_Output, kOutputBus, &flag, sizeof(flag) );
     if( err )
     {
-        // TODO: "couldn't enable input on the remote I/O unit"
-        return false;
-    }*/
-
-    // set render proc
-    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_SetRenderCallback,
-                                kAudioUnitScope_Input, 0, &inRenderProc, sizeof(inRenderProc) );
-    if( err )
-    {
-        // TODO: "couldn't set remote i/o render callback"
+        // TODO: "couldn't enable output on the remote I/O unit"
         return false;
     }
-        
+
+    
     UInt32 size = sizeof(localFormat);
     // get and set client format
     err = AudioUnitGetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
@@ -375,7 +397,7 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
     localFormat.mSampleRate = outFormat.mSampleRate;
     localFormat.mFormatFlags = kAudioFormatFlagIsSignedInteger |
     kAudioFormatFlagIsPacked |
-    kAudioFormatFlagIsNonInterleaved |
+    kAudioFormatFlagIsNonInterleaved | kAudioFormatFlagsNativeEndian |
     (24 << kLinearPCMFormatFlagsSampleFractionShift);
     localFormat.mChannelsPerFrame = outFormat.mChannelsPerFrame;
     localFormat.mBitsPerChannel = 32;
@@ -383,16 +405,18 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
     localFormat.mBytesPerFrame = 4;
     localFormat.mBytesPerPacket = 4;
     
-    // set stream property
-    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
-                                kAudioUnitScope_Input, 0, &localFormat, sizeof(localFormat) );
-    if( err )
-    {
-        // TODO: "couldn't set the remote I/O unit's input client format"
-        return false;
-    }
+    // Describe input format
+    inputFormat.mSampleRate			= 44100.00;
+    inputFormat.mFormatID			= kAudioFormatLinearPCM;
+    inputFormat.mFormatFlags		= kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked;
+    inputFormat.mFramesPerPacket	= 1;
+    inputFormat.mChannelsPerFrame	= 1;
+    inputFormat.mBitsPerChannel		= 16;
+    inputFormat.mBytesPerPacket		= sizeof(SInt16);
+    inputFormat.mBytesPerFrame		= sizeof(SInt16);
     
     size = sizeof(outFormat);
+    
     // get it again
     err = AudioUnitGetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
                                 kAudioUnitScope_Input, 0, &outFormat, &size );
@@ -401,18 +425,60 @@ bool setupRemoteIO( AudioUnit & inRemoteIOUnit, AURenderCallbackStruct inRenderP
         // TODO: "couldn't get the remote I/O unit's output client format"
         return false;
     }
-/*    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
-                                kAudioUnitScope_Output, 1, &outFormat, sizeof(outFormat) );
+    
+    UInt32 insize = sizeof(inputFormat);
+    if (MoAudio::m_handleInput) {
+        err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
+                                   kAudioUnitScope_Output, kInputBus, &inputFormat, insize);
+        if( err )
+        {
+            // TODO: "couldn't set the remote I/O unit's input client format"
+            return false;
+        }
+    }
+    
+    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_StreamFormat,
+                                kAudioUnitScope_Input, kOutputBus, &localFormat, size);
     if( err )
     {
-        // TODO: "couldn't set the remote I/O unit's input client format"
+        // TODO: "couldn't set the remote I/O unit's output client format"
         return false;
-    }*/
+    }
+    
+    if (MoAudio::m_handleInput) {
+        // set input proc
+        err = AudioUnitSetProperty( inRemoteIOUnit, kAudioOutputUnitProperty_SetInputCallback,
+                                   kAudioUnitScope_Global, kInputBus, &inInputProc, sizeof(inInputProc) );
+        if( err )
+        {
+            // TODO: "couldn't set remote i/o input callback"
+            return false;
+        }
+    }
 
-    // print the format
-    // printf( "format for remote i/o:\n" );
-    // outFormat.Print();
+    // set render proc
+    err = AudioUnitSetProperty( inRemoteIOUnit, kAudioUnitProperty_SetRenderCallback,
+                               kAudioUnitScope_Global, kOutputBus, &inRenderProc, sizeof(inRenderProc) );
+    if( err )
+    {
+        // TODO: "couldn't set remote i/o render callback"
+        return false;
+    }
 
+    
+    UInt32 allocflag = 0;
+    if (MoAudio::m_handleInput) {
+
+        err = AudioUnitSetProperty(inRemoteIOUnit, kAudioUnitProperty_ShouldAllocateBuffer, kAudioUnitScope_Output, kInputBus, &allocflag, sizeof(allocflag));
+        
+        MoAudio::inputBuffer = (AudioBufferList *)malloc(sizeof(AudioBuffer));
+        MoAudio::inputBuffer->mNumberBuffers = 1;
+        MoAudio::inputBuffer->mBuffers[0].mNumberChannels = 1;
+        
+        MoAudio::inputBuffer->mBuffers[0].mDataByteSize = 512*sizeof(SInt16);
+        MoAudio::inputBuffer->mBuffers[0].mData = calloc(512, sizeof(SInt16));
+    }
+    
     // initialize remote I/O unit
     err = AudioUnitInitialize( inRemoteIOUnit );
     if( err )
@@ -442,6 +508,13 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
     
     // TODO: fix this
     assert( numChannels == 2 );
+    
+    // check audio input
+    checkInput();
+    
+    m_inputProc.inputProc = SMALLInputProc;
+    // uh, this probably shouldn't be NULL
+    m_inputProc.inputProcRefCon = NULL;
     
     // set audio unit callback
     m_renderProc.inputProc = SMALLRenderProc;
@@ -492,8 +565,12 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
         // TODO: "couldn't set audio session active\n"
         return false;
     }
-
-    UInt32 category = kAudioSessionCategory_MediaPlayback;
+    UInt32 category;
+    if (MoAudio::m_handleInput) {
+        category = kAudioSessionCategory_PlayAndRecord;
+    } else {
+        category = kAudioSessionCategory_MediaPlayback;
+    }
     // set audio category
     err = AudioSessionSetProperty( kAudioSessionProperty_AudioCategory, sizeof(category), &category );
     if( err )
@@ -584,7 +661,7 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
     }
     
     // set up remote I/O
-    if( !setupRemoteIO( m_au, m_renderProc, m_info->m_dataFormat ) )
+    if( !setupRemoteIO( m_au, m_inputProc, m_renderProc, m_info->m_dataFormat ) )
     {
         // TODO: "couldn't setup remote i/o unit"
         return false;
@@ -599,9 +676,6 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
         return false;
     }
     
-    // check audio input
-    checkInput();
-
     // done with initialization
     m_hasInit = true;
 
@@ -715,15 +789,16 @@ void MoAudio::shutdown()
 void MoAudio::checkInput()
 {
     // handle input in callback
-    m_handleInput = false;
+    m_handleInput = true;
 
-    UInt32 has_input;
+    UInt32 has_input = 0;
     UInt32 size = sizeof(has_input);
     // get property
-    OSStatus err = AudioSessionGetProperty( kAudioSessionProperty_AudioInputAvailable, &size, &has_input );        
+    OSStatus err = AudioSessionGetProperty( kAudioSessionProperty_AudioInputAvailable, &size, &has_input );
     if( err )
     {
         // TODO: "warning: unable to determine availability of audio input"
+        m_handleInput = false;
     }
     else if( !has_input  )
     {
@@ -742,4 +817,18 @@ void MoAudio::checkInput()
 void MoAudio::vibrate()
 {
     AudioServicesPlaySystemSound( kSystemSoundID_Vibrate );
+}
+
+Float32 MoAudio::getVolume()
+{
+    Float32 volume;
+    UInt32 dataSize = sizeof(Float32);
+    
+    AudioSessionGetProperty (
+                             kAudioSessionProperty_CurrentHardwareOutputVolume,
+                             &dataSize,
+                             &volume
+                             );
+    
+    return volume;
 }

@@ -26,6 +26,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     for(int i=0; i<framesize; i++)
     {
         SAMPLE outz, fx;
+        Float32 amp;
         if (data->backgroundEnabled) {
             outz = data->backgroundMusic->tick();
         } else {
@@ -34,7 +35,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
         
         for (int j=0; j < data->numAsteroids; j++) {
             if (data->fxEnabled) {
-                Float32 amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[j]->tick() - 98.0)/20.0)));
+                amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[j]->tick() - 98.0)/20.0)));
                 if (!data->maxVol)
                     fx = amp * data->sineWaves[j]->tick();
                 else
@@ -59,6 +60,12 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
             default:
                 buffer[2*i] = buffer[2*i+1] = outz + fx;
                 break;
+        }
+        if (data->oscillate){
+            if (amp >= data->upperBound)
+                data->myAsymp[0]->setTarget(data->lowerBound);
+            else if (amp <= data->lowerBound)
+                data->myAsymp[0]->setTarget(data->upperBound);
         }
     }
 }
@@ -201,6 +208,20 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.maxVol = false;
 }
 
+
+- (void) playOscillatingTone:(int) frequency
+       timeConst:(double) duration
+         toneNum:(int) index
+{
+    audioData.sineWaves[0]->setFrequency(frequency);
+    audioData.myAsymp[0]->setTarget(1.0);
+    audioData.myAsymp[0]->setTime(duration);
+    audioData.toneIndex = index;
+    audioData.maxVol = false;
+    audioData.oscillate = true;
+}
+
+
 - (void) PauseTone
 {
     audioData.fxEnabled = false;
@@ -208,9 +229,12 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 
 - (void) MaxTone
 {
-    //audioData.myAsymp[0]->setValue(1.0);
-    //audioData.myAsymp[0]->setRate(0.0);
     audioData.maxVol = true;
+}
+
+- (NSNumber *) getAmplitude
+{
+    return [[NSNumber alloc] initWithFloat: 98.0 * audioData.myAsymp[0]->tick()];
 }
 
 - (void) ResumeTone
@@ -231,5 +255,10 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 - (void) playExplosion
 {
     audioData.playExplosion = true;
+}
+
+- (Float32) getVolume
+{
+    return MoAudio::getVolume();
 }
 @end

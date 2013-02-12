@@ -159,11 +159,18 @@
            freqThresh:(double) freq
             volThresh:(double) vol
          audioChannel:(int) channel
+             attempts:(int) tapCounts
+         reactionTime:(double) initTime
+             lastTime:(double) finalTime
 {
     TestData *dataPoint = (TestData *)[NSEntityDescription insertNewObjectForEntityForName:@"TestData" inManagedObjectContext:self.managedObjectContext];
+    
     [dataPoint setFreq:[NSNumber numberWithDouble:freq]];
     [dataPoint setVolume:[NSNumber numberWithDouble:vol]];
     [dataPoint setChannel:[NSNumber numberWithDouble:channel]];
+    [dataPoint setAttempts:[NSNumber numberWithInt:tapCounts]];
+    [dataPoint setInit_time:[NSNumber numberWithDouble:initTime]];
+    [dataPoint setFinal_time:[NSNumber numberWithDouble:finalTime]];
     [dataPoint setSession:identifier];
 
     [self.managedObjectContext save:nil];
@@ -179,20 +186,24 @@
     request.sortDescriptors = [NSArray arrayWithObject:[NSSortDescriptor sortDescriptorWithKey:@"freq"
                                                                                      ascending:YES
                                                                                       selector:@selector(localizedCaseInsensitiveCompare:)]];
-    
     NSError *error;
     NSArray *reqData = [moc executeFetchRequest:request error:&error];
     NSMutableArray *data = [NSMutableArray array];
     _numOfDataPoints = [reqData count];
-    iOSBridge::DataPoint *tmp = (iOSBridge::DataPoint *)malloc(sizeof(iOSBridge::DataPoint)*_numOfDataPoints);
+    
+    if (dataptr != NULL)
+        free(dataptr);
+    
+    dataptr = (iOSBridge::DataPoint *)malloc(sizeof(iOSBridge::DataPoint)*_numOfDataPoints);
+    
     for (int i = 0; i < _numOfDataPoints; i++){
-        tmp[i].freq = [((TestData *) [reqData objectAtIndex:i]).freq floatValue];
-        tmp[i].vol = [((TestData *) [reqData objectAtIndex:i]).volume floatValue];
-        tmp[i].channel = [((TestData *) [reqData objectAtIndex:i]).channel integerValue];
-        [data addObject:[NSValue value:&tmp[i] withObjCType:@encode(iOSBridge::DataPoint)]];
+        dataptr[i].freq = [((TestData *) [reqData objectAtIndex:i]).freq floatValue];
+        dataptr[i].vol = [((TestData *) [reqData objectAtIndex:i]).volume floatValue];
+        dataptr[i].channel = [((TestData *) [reqData objectAtIndex:i]).channel integerValue];
+        [data addObject:[NSValue value:&dataptr[i] withObjCType:@encode(iOSBridge::DataPoint)]];
     }
     
-    return tmp;
+    return dataptr;
 }
 
 

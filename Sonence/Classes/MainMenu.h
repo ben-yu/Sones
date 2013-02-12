@@ -14,7 +14,6 @@
 #include "CCParallaxNodeExtras.h"
 #include "ToneGeneratorHelper.h"
 #include "DataStore.h"
-#include "Ship.h"
 #include "SpaceScene.h"
 #include "AudiogramScene.h"
 
@@ -50,6 +49,8 @@ public:
     
     void startGameCallback(CCObject* sender);
     void startAccelCallback(CCObject* sender);
+    void startCannonCallback(CCObject* pSender);
+
     
     
     CREATE_FUNC(LevelLayer);

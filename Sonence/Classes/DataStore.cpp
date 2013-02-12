@@ -19,25 +19,17 @@ namespace iOSBridge {
         free(returnData);
     }
     
-    void DataStore::saveData(double freq, double volume, int channel ) {
+    void DataStore::saveData(std::string name, double freq, double volume, int channel , int attempts, double init_time, double final_time) {
         RootViewController *vc = (RootViewController *) rootVCPtr;
-        [vc storeDataPoint:@"test" freqThresh:freq volThresh:volume audioChannel:channel];
+        
+        [vc storeDataPoint:[NSString stringWithUTF8String:name.c_str()] freqThresh:freq volThresh:volume audioChannel:channel attempts:attempts  reactionTime: init_time
+                  lastTime:final_time];
     }
     
     DataPoint* DataStore::readData() {
         RootViewController *vc = (RootViewController *) rootVCPtr;
-        numOfElements = vc.numOfDataPoints;
         DataPoint* tmpData =  [vc getData];
-        //if (!returnData) {
-            //numOfElements = [tmpData count];
-            //returnData = (DataPoint*) calloc(sizeof(DataPoint), numOfElements);
-        //}
-            
-        /*
-        for (int i = 1; i < numOfElements; i++) {
-            returnData[i].freq = [((DataPoint *)([tmpData objectAtIndex:i])) CGPointValue].x;
-            returnData[i].vol = [((DataPoint *)([tmpData objectAtIndex:i])) CGPointValue].y;
-        }*/
+        numOfElements = vc.numOfDataPoints;
         
         return tmpData;
         

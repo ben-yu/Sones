@@ -51,7 +51,7 @@ AudiogramSceneLayer::AudiogramSceneLayer()
     addChild(xTitle);
     addChild(yTitle);
     
-    xScale = 3000.0;
+    xScale = 8000.0;
     yScale = 98.0;
     
     CCArray* xAxisLabels = CCArray::createWithCapacity(10);

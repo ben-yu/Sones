@@ -29,12 +29,15 @@ struct AudioData{
     BlitSaw **sineWaves;
     FileLoop *backgroundMusic;
     FileWvIn *explosion;
+    float lowerBound = 0.001;
+    float upperBound = 1.0;
     int numAsteroids;
     int toneIndex; // 0 - L , 1 - R, 2 - Both
     BOOL backgroundEnabled = true;
     BOOL fxEnabled = true;
     BOOL playExplosion = false;
     BOOL maxVol = false;
+    BOOL oscillate = false;
 };
 
 @interface ToneGenerator_objc : NSObject {
@@ -56,10 +59,15 @@ struct AudioData{
 - (void) AddTone:(int) frequency
        timeConst:(double) duration
          toneNum:(int) index;
+- (void) playOscillatingTone:(int) frequency
+                   timeConst:(double) duration
+                     toneNum:(int) index;
 - (NSNumber *) RemoveTone:(int) index;
 - (void) ResumeTone;
 - (void) PauseTone;
 - (void) MaxTone;
 - (void) playExplosion;
+- (NSNumber *) getAmplitude;
+- (Float32) getVolume;
 
 @end

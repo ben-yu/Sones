@@ -64,6 +64,7 @@ public:
     void spawnHighFreqEnemy();
     void spawnAsteroid();
     void nextLevel();
+    void reload();
     
     void spawn1_L(); void spawn2_L(); void spawn3_L(); void spawn4_L(); void spawn5_L();
     void spawn1_R(); void spawn2_R(); void spawn3_R(); void spawn4_R(); void spawn5_R();
@@ -98,11 +99,14 @@ private:
     // Game Resources - Labels
     CCLabelTTF *distLabel;
     CCLabelTTF *scoreLabel;
+    CCLabelTTF *livesLabel;
     CCLabelTTF *tutorialText;
     CCLabelTTF *tutorialText2;
     CCLabelTTF *tutorialText3;
     CCLabelTTF *tutorialText4;
     CCLabelTTF *tutorialText5;
+    
+    CCMenu* tutorialSkipButton;
     
     iOSBridge::ToneGeneratorHelper *toneGenHelp;    // Sound Generator
     iOSBridge::DataStore *dataStoreHandler;         // Data Store Handler
@@ -115,6 +119,7 @@ private:
     // Player Data
     CCPoint playerPos;
     int _health = 100;
+    int lives = 3;
     
     float *alphaTargets;
     float *timeTargets;
@@ -125,14 +130,22 @@ private:
     bool asteroidSpawned = false;
     bool gameOver = false;
     bool spawnRegularEnemies;
+    bool touchTimerFlag = false;
+    bool reloading = false;
+    
     int score = 0;
     int distance = 0;
-    int level = 1;
+    int level = 2;
+    int touchAttempts = 0;
+    
     float radarRadius;
     float enemyVelocity;
+    float reloadTime = 2.0;
     float seed_freq;
     float tutorialDuration;
     float initTime;
+    float touchTime;
+    float finalTime;
     
     int _nextAsteroid;
     int _curAsteroidCount;
@@ -185,7 +198,7 @@ public:
     
     void *rootVC;
     CCMenuItemImage *pauseButton;
-        
+    
 private:
     CCScene* mainMenuPtr;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
@@ -194,6 +207,7 @@ private:
 
 };
 
+// TO-DO: Move to DataStore
 struct WriteThis {
     const char *readptr;
     long sizeleft;

@@ -151,6 +151,7 @@ public:
     
 public: // sketchy public
     static void checkInput();
+    static Float32 getVolume();
 
 protected:
     static bool initOut();
@@ -175,7 +176,10 @@ public: // ge: making this public was a hack
     static void * m_bindle;
     
     // audio unit remote I/O
+    static AURenderCallbackStruct m_inputProc;
     static AURenderCallbackStruct m_renderProc;
+    
+    static AudioBufferList *inputBuffer;
 };
 
 
