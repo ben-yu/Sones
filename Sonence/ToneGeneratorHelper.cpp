@@ -40,6 +40,11 @@ namespace iOSBridge{
         [((ToneGenerator_objc *)toneGenerator_objc)   playOscillatingTone:(int) floorf(frequency) timeConst:(double) duration toneNum:index];
     }
     
+    void ToneGeneratorHelper::playDecreasingTone(float frequency, double duration, int index)
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   playDecreasingTone:(int) floorf(frequency) timeConst:(double) duration toneNum:index];
+    }
+    
     float ToneGeneratorHelper::removeTone(int index)
     {
         return [[((ToneGenerator_objc *)toneGenerator_objc)   RemoveTone:index] floatValue];
@@ -93,6 +98,11 @@ namespace iOSBridge{
     void ToneGeneratorHelper::stop()
     {
         [((ToneGenerator_objc *)toneGenerator_objc)   Stop];
+    }
+    
+    void ToneGeneratorHelper::oscillateBackground()
+    {
+        [((ToneGenerator_objc *)toneGenerator_objc)   oscillateBackground];
     }
     
     float ToneGeneratorHelper::getVolume()

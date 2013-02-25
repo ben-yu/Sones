@@ -26,7 +26,7 @@ using namespace stk;
 struct AudioData{
     Mandolin *myMandolin;
     Envelope **myAsymp;
-    BlitSaw **sineWaves;
+    SineWave **sineWaves;
     FileLoop *backgroundMusic;
     FileWvIn *explosion;
     float lowerBound = 0.001;
@@ -38,6 +38,7 @@ struct AudioData{
     BOOL playExplosion = false;
     BOOL maxVol = false;
     BOOL oscillate = false;
+    BOOL oscillateBackground = false;
 };
 
 @interface ToneGenerator_objc : NSObject {
@@ -62,6 +63,9 @@ struct AudioData{
 - (void) playOscillatingTone:(int) frequency
                    timeConst:(double) duration
                      toneNum:(int) index;
+- (void) playDecreasingTone:(int) frequency
+                   timeConst:(double) duration
+                     toneNum:(int) index;
 - (NSNumber *) RemoveTone:(int) index;
 - (void) ResumeTone;
 - (void) PauseTone;
@@ -69,5 +73,6 @@ struct AudioData{
 - (void) playExplosion;
 - (NSNumber *) getAmplitude;
 - (Float32) getVolume;
+- (void) oscillateBackground;
 
 @end

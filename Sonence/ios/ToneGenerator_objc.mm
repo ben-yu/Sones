@@ -19,6 +19,7 @@
 @interface ToneGenerator_objc()
 @end
 
+// Render callback function called from MoMu
 void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 {
     AudioData * data = (AudioData*) userData;
@@ -26,28 +27,37 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     for(int i=0; i<framesize; i++)
     {
         SAMPLE outz, fx;
-        Float32 amp;
-        if (data->backgroundEnabled) {
+        Float32 amp ;
+        
+        // Background Music
+        if (data->backgroundEnabled && data->oscillateBackground) {
+            amp = data->myAsymp[0]->tick();
+            outz = amp * data->backgroundMusic->tick();
+        } else if (data->backgroundEnabled  && !data->oscillateBackground) {
             outz = data->backgroundMusic->tick();
         } else {
             outz = 0.0;
         }
         
-        for (int j=0; j < data->numAsteroids; j++) {
-            if (data->fxEnabled) {
-                amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[j]->tick() - 98.0)/20.0)));
-                if (!data->maxVol)
-                    fx = amp * data->sineWaves[j]->tick();
-                else
-                    fx = data->sineWaves[j]->tick();
-                if (data->playExplosion)
-                    outz += data->explosion->tick();
-                if (data->explosion->isFinished()) {
-                    data->playExplosion = false;
-                    data->explosion->reset();
-                }
+        if (data->fxEnabled) {
+            // Pure-Tones
+            if (!data->maxVol) {
+                amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[0]->tick() - 98.0)/20.0)));
+                fx = amp * data->sineWaves[0]->tick();
+            } else {
+                fx = data->sineWaves[0]->tick();
+            }
+            
+            // Explosion
+            if (data->playExplosion)
+                outz += data->explosion->tick();
+            if (data->explosion->isFinished()) {
+                data->playExplosion = false;
+                data->explosion->reset();
             }
         }
+        
+        // Channel Output
         switch (data->toneIndex) {
             case 0:
                 buffer[2*i] = outz + fx;
@@ -61,6 +71,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
                 buffer[2*i] = buffer[2*i+1] = outz + fx;
                 break;
         }
+        
         if (data->oscillate){
             if (amp >= data->upperBound)
                 data->myAsymp[0]->setTarget(data->lowerBound);
@@ -73,23 +84,29 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 @implementation ToneGenerator_objc
 @synthesize playing;
 
+
 - (id)init:(int) numOfAsteroids
 {
     self = [super init];
     if (self) {
+        
+        NSBundle *mainBundle = [NSBundle mainBundle]; // Get Bundle
+        NSString *myFile = [mainBundle pathForResource: @"echelon" ofType: @"wav"]; // Open background music file
+        
         audioData.numAsteroids = numOfAsteroids;
         audioData.myMandolin = new Mandolin(400);
-        NSBundle *mainBundle = [NSBundle mainBundle];
-        NSString *myFile = [mainBundle pathForResource: @"echelon" ofType: @"wav"];
         audioData.backgroundMusic = new FileLoop(std::string([myFile UTF8String]));
         audioData.myAsymp = (Envelope **) calloc(sizeof(void *), numOfAsteroids);
-        audioData.sineWaves = (BlitSaw **) calloc(sizeof(void *), numOfAsteroids);
-        myFile = [mainBundle pathForResource: @"explosion" ofType: @"wav"];
+        audioData.sineWaves = (SineWave **) calloc(sizeof(void *), numOfAsteroids);
+        
+        myFile = [mainBundle pathForResource: @"explosion" ofType: @"wav"]; // Open explosion music file
         audioData.explosion = new FileWvIn(std::string([myFile UTF8String]));
+        
         for (int i=0; i<numOfAsteroids; i++) {
-            audioData.sineWaves[i] = new BlitSaw();
+            audioData.sineWaves[i] = new SineWave();
             audioData.myAsymp[i] = new Envelope();
         }
+        
         if (!momuInitialized) {
             // init audio
             NSLog(@"Initializing Audio");
@@ -197,6 +214,10 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.backgroundEnabled = false;
 }
 
+- (BOOL) getBackgroundStatus {
+    return audioData.backgroundEnabled;
+}
+
 - (void) AddTone:(int) frequency
          timeConst:(double) duration
          toneNum:(int) index
@@ -208,28 +229,51 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.maxVol = false;
 }
 
-
 - (void) playOscillatingTone:(int) frequency
        timeConst:(double) duration
          toneNum:(int) index
 {
     audioData.sineWaves[0]->setFrequency(frequency);
-    audioData.myAsymp[0]->setTarget(1.0);
+    audioData.myAsymp[0]->setTarget(100.0);
+    audioData.myAsymp[0]->setTime(duration);
+    audioData.toneIndex = index;
+    audioData.maxVol = true;
+    audioData.oscillate = true;
+    audioData.upperBound = 100.0;
+    audioData.oscillateBackground = true;
+}
+
+- (void) playDecreasingTone:(int) frequency
+                   timeConst:(double) duration
+                     toneNum:(int) index
+{
+    audioData.sineWaves[0]->setFrequency(frequency);
+    audioData.myAsymp[0]->setTarget(0.0);
     audioData.myAsymp[0]->setTime(duration);
     audioData.toneIndex = index;
     audioData.maxVol = false;
-    audioData.oscillate = true;
+    audioData.oscillate = false;
 }
-
 
 - (void) PauseTone
 {
     audioData.fxEnabled = false;
 }
 
+- (void) oscillateBackground
+{
+    audioData.oscillateBackground = true;
+    audioData.maxVol = true;
+}
+
 - (void) MaxTone
 {
     audioData.maxVol = true;
+}
+
+- (BOOL) getToneStatus
+{
+    return audioData.fxEnabled;
 }
 
 - (NSNumber *) getAmplitude

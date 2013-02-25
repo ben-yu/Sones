@@ -10,7 +10,8 @@
 #include "SpaceScene.h"
 #include "MainMenu.h"
 
-#define PTM_RATIO 32
+#define PTM_RATIO 20
+#define PI 3.14159265
 
 enum {
     kTagParentNode = 1,
@@ -26,6 +27,12 @@ CannonBallSprite::CannonBallSprite()
 void CannonBallSprite::setPhysicsBody(b2Body * body)
 {
     m_pBody = body;
+}
+
+
+b2Body* CannonBallSprite::getPhysicsBody()
+{
+    return this->m_pBody;
 }
 
 // this method will only get called if the sprite is batched.
@@ -70,8 +77,8 @@ CCAffineTransform CannonBallSprite::nodeToParentTransform(void)
 CannonLayer::CannonLayer()
 : m_pSpriteTexture(NULL)
 {
-    setTouchEnabled( true );
-    setAccelerometerEnabled( true );
+    setTouchEnabled(true);
+    setAccelerometerEnabled(true);
     
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     // init physics
@@ -82,7 +89,7 @@ CannonLayer::CannonLayer()
     //Set up sprite
 #if 1
     // Use batch node. Faster
-    CCSpriteBatchNode *parent = CCSpriteBatchNode::create("slice_3_0.png", 100);
+    CCSpriteBatchNode *parent = CCSpriteBatchNode::create("ironball.png", 100);
     m_pSpriteTexture = parent->getTexture();
 #else
     // doesn't use batch node. Slower
@@ -96,10 +103,13 @@ CannonLayer::CannonLayer()
     {        
         for (int i = 0; i < e_rowCount; ++i)
         {
-            addNewSpriteAtPosition(ccp((j*s.width/10), (3*s.height/10 + 1.54f * i)));
+            addNewSpriteAtPosition(ccp((j*s.width/10) + s.width, (3*s.height/10 + (16.0f * i))));
         }
     }
 
+    cannon = CCSprite::create("cannon2.png");
+    addChild(cannon,0);
+    cannon->setPosition(ccp(s.width/10, s.height/2));
     
     CCLabelTTF *label = CCLabelTTF::create("Press the Button when you can't hear the tone", "Ubuntu", 20);
     addChild(label, 0);
@@ -121,10 +131,41 @@ void CannonLayer::onEnter()
 {
     CCLayer::onEnter();
     
-    this->toneGenHelp = ((CannonScene *)this->getParent())->getToneGenerator();
-    this->toneGenHelp->playBackgroundMusic("main_background.wav");
-    this->toneGenHelp->enableTones();
-    this->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    CCNode* parent = getChildByTag(kTagParentNode);
+    cannonBall = new CannonBallSprite();
+    
+    // Define the dynamic body.
+    //Set up a 1m squared box in the physics world
+    b2BodyDef bodyDef;
+    bodyDef.type = b2_dynamicBody;
+    bodyDef.position.Set(cannon->getPosition().x/PTM_RATIO,cannon->getPosition().y/PTM_RATIO);
+    
+    
+    b2Body *body = world->CreateBody(&bodyDef);
+    
+    // Define another box shape for our dynamic body.
+    b2CircleShape circle;
+    circle.m_radius = 0.4f;
+    
+    // Define the dynamic body fixture.
+    b2FixtureDef fixtureDef;
+    fixtureDef.shape = &circle;
+    fixtureDef.density = 1.0f;
+    fixtureDef.friction = 0.3f;
+    body->CreateFixture(&fixtureDef);
+    
+    cannonBall->initWithTexture(m_pSpriteTexture);
+    cannonBall->autorelease();
+    //cannonBall->setRotation(180.0);
+    //cannonBall->setPosition(ccp(0.9*s.width/PTM_RATIO,0.5*s.height/PTM_RATIO));
+    cannonBall->setPhysicsBody(body);
+    cannonBall->setVisible(true);
+    
+    parent->addChild(cannonBall);
+    this->runAction(CCFollow::create(cannonBall, CCRectMake(0, 0, s.width*2 + 100, s.height)));
+    
 }
 
 void CannonLayer::initPhysics()
@@ -166,7 +207,7 @@ void CannonLayer::initPhysics()
     
     // bottom
     
-    groundBox.Set(b2Vec2(0,0), b2Vec2(s.width/PTM_RATIO,0));
+    groundBox.Set(b2Vec2(0,0), b2Vec2(s.width*3/PTM_RATIO,0));
     groundBody->CreateFixture(&groundBox,0);
     
     // top
@@ -178,30 +219,19 @@ void CannonLayer::initPhysics()
     groundBody->CreateFixture(&groundBox,0);
     
     // right
-    groundBox.Set(b2Vec2(s.width/PTM_RATIO,s.height/PTM_RATIO), b2Vec2(s.width/PTM_RATIO,0));
+    groundBox.Set(b2Vec2(s.width*3/PTM_RATIO,s.height/PTM_RATIO), b2Vec2(s.width*3/PTM_RATIO,0));
     groundBody->CreateFixture(&groundBox,0);    
 }
 
 void CannonLayer::createResetButton()
 {
-    CCMenuItemImage *reset = CCMenuItemImage::create("launchBtn.png", "launchBtnWhenPressed.png", this, menu_selector(CannonLayer::reset));
-    
-    reset->setScale(0.1);
-    
-    CCMenu *menu = CCMenu::create(reset, NULL);
-    
-    CCSize s = CCDirector::sharedDirector()->getWinSize();
-    
-    menu->setPosition(ccp(s.width/2, 30));
-    this->addChild(menu, -1);
-    
+
 }
 
 void CannonLayer::reset(CCObject* sender)
 {
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     CCNode* parent = getChildByTag(kTagParentNode);
-
 
     vol_meas = toneGenHelp->getAmplitude();
     countTimes++;
@@ -210,38 +240,13 @@ void CannonLayer::reset(CCObject* sender)
         this->toneGenHelp->playOscillatingTone(randomValueBetween(20.0,2000.0), 5.0, 2);
     }
     
-    // Define the dynamic body.
-    //Set up a 1m squared box in the physics world
-    b2BodyDef bodyDef;
-    bodyDef.type = b2_dynamicBody;
-    bodyDef.position.Set(0.9*s.width/PTM_RATIO,0.5*s.height/PTM_RATIO);
+    b2Body* body = cannonBall->getPhysicsBody();
+    b2Vec2 vel = b2Vec2(sin(curAngle*PI/180),cos(curAngle*PI/180));
+    vel =  50*vel;
+    body->SetTransform(b2Vec2(cannon->getPosition().x/PTM_RATIO,cannon->getPosition().y/PTM_RATIO), 0.0);
+    body->SetLinearVelocity(vel);
+    cannonBall->setVisible(true);
     
-    
-    b2Body *body = world->CreateBody(&bodyDef);
-    
-    // Define another box shape for our dynamic body.
-    b2PolygonShape dynamicBox;
-    dynamicBox.SetAsBox(.5f, .5f);//These are mid points for our 1m box
-    
-    // Define the dynamic body fixture.
-    b2FixtureDef fixtureDef;
-    fixtureDef.shape = &dynamicBox;
-    fixtureDef.density = 1.0f;
-    fixtureDef.friction = 0.3f;
-    body->CreateFixture(&fixtureDef);
-    body->SetLinearVelocity(b2Vec2(-50.0f,0.0f));
-        
-    CannonBallSprite *sprite = new CannonBallSprite();
-    sprite->initWithTexture(m_pSpriteTexture);
-    sprite->autorelease();
-    sprite->setRotation(180.0);
-    sprite->setPosition(ccp(0.9*s.width/PTM_RATIO,0.5*s.height/PTM_RATIO));
-    sprite->setPhysicsBody(body);
-    sprite->setVisible(true);
-    
-    parent->addChild(sprite);
-    
-
 }
 
 void CannonLayer::draw()
@@ -309,10 +314,38 @@ void CannonLayer::update(float dt)
     
     int velocityIterations = 8;
     int positionIterations = 1;
+    b2Body* body = cannonBall->getPhysicsBody();
+    cannonBall->setPosition(ccp(body->GetPosition().x*PTM_RATIO,body->GetPosition().y*PTM_RATIO));
     
     // Instruct the world to perform a single step of simulation. It is
     // generally best to keep the time step and iterations fixed.
     world->Step(dt, velocityIterations, positionIterations);
+}
+
+void CannonLayer::ccTouchesBegan(CCSet* touches, CCEvent* event)
+{
+
+}
+
+void CannonLayer::ccTouchesMoved(CCSet* touches, CCEvent* event)
+{
+    CCPoint mean_touch;
+    CCSetIterator iter = touches->begin();
+    for (; iter != touches->end(); iter++) // Iterate through touch list, only get first touch?
+    {
+        CCTouch* pTouch = (CCTouch*)(*iter);
+        CCPoint location = pTouch->getLocation();
+        
+        mean_touch = location; // Take mean of multi-touch later if needed
+        
+    }
+    CCPoint pos = cannon->getPosition();
+    
+    //Calulate angle between ship and touch position
+    curAngle = atan2f(mean_touch.y - pos.y,mean_touch.x - pos.x) * (-180/3.14159) + 90.0f;
+    
+    pos.setPoint(pos.x - 15, pos.y);
+    cannon->setRotation(curAngle);
 }
 
 void CannonLayer::ccTouchesEnded(CCSet* touches, CCEvent* event)
@@ -390,7 +423,7 @@ void CannonScene::runGame()
             break;
     }
     
-    addChild(pLayer);
+    addChild(pLayer,0,0);
     pLayer->autorelease();
     
 }
@@ -406,7 +439,20 @@ CannonScene::CannonScene()
     pMenu->setPosition(CCPointZero);
     pauseButton->setPosition( ccp(s.width*0.95,s.height*0.95) );
     
+    CCMenuItemImage *reset = CCMenuItemImage::create("launchBtn.png", "launchBtnWhenPressed.png", this, menu_selector(CannonScene::shootCannon));
+    
+    powerLabel = CCLabelTTF::create("0", "PressStart2P-Regular", 12.0);
+    powerLabel->setPosition(ccp(s.width/10,s.height*0.9));
+    
+    reset->setScale(0.1);
+    
+    CCMenu *menu = CCMenu::create(reset, NULL);
+    
+    menu->setPosition(ccp(s.width/2, 30));
+    addChild(menu, -1);
+    
     addChild(pMenu, 1);
+    addChild(powerLabel);
 }
 
 void CannonScene::MainMenuCallback(CCObject* pSender)
@@ -461,6 +507,32 @@ void CannonScene::RecursivelyResumeAllChildren( CCNode * node ) {
         CCNode * n = (CCNode *)obj;
         RecursivelyResumeAllChildren(n);
     }
+}
+
+void CannonScene::shootCannon()
+{
+
+    CannonLayer* layer = ((CannonLayer *)(this->getChildByTag(0)));
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    layer->vol_meas = toneGenHelp->getAmplitude()/98.0;
+    iOSBridge::stringstream tempString;
+    tempString.str("");
+    tempString<<layer->vol_meas;
+    powerLabel->setString(tempString.str().c_str());
+    
+    layer->countTimes++;
+    if (layer->countTimes == 5)
+    {
+        this->toneGenHelp->playOscillatingTone(layer->randomValueBetween(20.0,2000.0), 5.0, 2);
+    }
+    
+    b2Body* body = layer->cannonBall->getPhysicsBody();
+    b2Vec2 vel = b2Vec2(sin(layer->curAngle*PI/180),cos(layer->curAngle*PI/180));
+    vel =  50*layer->vol_meas*vel;
+    body->SetTransform(b2Vec2(layer->cannon->getPosition().x/PTM_RATIO,layer->cannon->getPosition().y/PTM_RATIO), 0.0);
+    body->SetLinearVelocity(vel);
+    layer->cannonBall->setVisible(true);
 }
 
 

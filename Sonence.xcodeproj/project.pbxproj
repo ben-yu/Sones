@@ -155,6 +155,8 @@
 		D94362781652CB82009FFBE4 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D94362771652CB82009FFBE4 /* CoreData.framework */; };
 		D94362FD16535E9D009FFBE4 /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D94362FC16535E9D009FFBE4 /* MediaPlayer.framework */; };
 		D9436311165371FF009FFBE4 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = D9436310165371FF009FFBE4 /* Default.png */; };
+		D9517F2016D5C7E900601EB7 /* GLES-Render.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D9517F1E16D5C7E900601EB7 /* GLES-Render.cpp */; };
+		D9517F2316D9145A00601EB7 /* MLSearch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D9517F2116D9145A00601EB7 /* MLSearch.cpp */; };
 		D954857C168B754100E464CE /* CCParallaxNodeExtras.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D98A74E7162B490100E5EBA5 /* CCParallaxNodeExtras.cpp */; };
 		D9560FC616AD7F120008A7F5 /* SpacePhysics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D9560FC416AD7F120008A7F5 /* SpacePhysics.cpp */; };
 		D95610C116AD80EC0008A7F5 /* Box2DConfig.cmake in Resources */ = {isa = PBXBuildFile; fileRef = D956105E16AD80EC0008A7F5 /* Box2DConfig.cmake */; };
@@ -441,11 +443,15 @@
 		D9A01E5316B712D1007F279B /* cannon.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A01E5216B712D1007F279B /* cannon.png */; };
 		D9A01E5616B715DB007F279B /* launchBtn.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A01E5416B715DB007F279B /* launchBtn.png */; };
 		D9A01E5716B715DB007F279B /* launchBtnWhenPressed.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A01E5516B715DB007F279B /* launchBtnWhenPressed.png */; };
+		D9A071C916CAEAB900D1340A /* missile_1_0 copy.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A071C716CAEAB900D1340A /* missile_1_0 copy.png */; };
+		D9A071CA16CAEAB900D1340A /* missile_3_0 copy.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A071C816CAEAB900D1340A /* missile_3_0 copy.png */; };
 		D9A0AA7E1695ED33003E5140 /* warrior1_0.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A0AA7D1695ED33003E5140 /* warrior1_0.png */; };
 		D9A5070A16A7A395005D22A6 /* Starfield.jpg in Resources */ = {isa = PBXBuildFile; fileRef = D9A5070916A7A395005D22A6 /* Starfield.jpg */; };
 		D9A5071E16A88CDF005D22A6 /* Icon@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A5071D16A88CDF005D22A6 /* Icon@2x.png */; };
 		D9A5072016A88D19005D22A6 /* Icon@2x_retina.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A5071F16A88D19005D22A6 /* Icon@2x_retina.png */; };
 		D9A7DFAA16B77DFB001A3CA1 /* slice_4_4.png in Resources */ = {isa = PBXBuildFile; fileRef = D9A7DFA916B77DF9001A3CA1 /* slice_4_4.png */; };
+		D9B23D5016D98CE90099E653 /* ironball.png in Resources */ = {isa = PBXBuildFile; fileRef = D9B23D4F16D98CE90099E653 /* ironball.png */; };
+		D9B23D5216D98CF30099E653 /* cannon2.png in Resources */ = {isa = PBXBuildFile; fileRef = D9B23D5116D98CF30099E653 /* cannon2.png */; };
 		D9D886D0166E2CBA00FD0474 /* health.png in Resources */ = {isa = PBXBuildFile; fileRef = D9D886CF166E2CBA00FD0474 /* health.png */; };
 		D9D886D2166E2D2D00FD0474 /* futureui1.png in Resources */ = {isa = PBXBuildFile; fileRef = D9D886D1166E2D2D00FD0474 /* futureui1.png */; };
 		D9D886D4166E575100FD0474 /* hp.png in Resources */ = {isa = PBXBuildFile; fileRef = D9D886D3166E575100FD0474 /* hp.png */; };
@@ -720,6 +726,10 @@
 		D94362C916535A46009FFBE4 /* libCorePlot-CocoaTouch.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libCorePlot-CocoaTouch.a"; path = "../../core-plot/build/Debug-iphoneos/libCorePlot-CocoaTouch.a"; sourceTree = "<group>"; };
 		D94362FC16535E9D009FFBE4 /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
 		D9436310165371FF009FFBE4 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default.png; path = ../Default.png; sourceTree = "<group>"; };
+		D9517F1E16D5C7E900601EB7 /* GLES-Render.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "GLES-Render.cpp"; sourceTree = "<group>"; };
+		D9517F1F16D5C7E900601EB7 /* GLES-Render.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "GLES-Render.h"; sourceTree = "<group>"; };
+		D9517F2116D9145A00601EB7 /* MLSearch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MLSearch.cpp; path = ../MLSearch.cpp; sourceTree = "<group>"; };
+		D9517F2216D9145A00601EB7 /* MLSearch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MLSearch.h; path = ../MLSearch.h; sourceTree = "<group>"; };
 		D9560FC416AD7F120008A7F5 /* SpacePhysics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SpacePhysics.cpp; sourceTree = "<group>"; };
 		D9560FC516AD7F120008A7F5 /* SpacePhysics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SpacePhysics.h; sourceTree = "<group>"; };
 		D956105D16AD80EC0008A7F5 /* Box2D.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Box2D.h; sourceTree = "<group>"; };
@@ -1299,11 +1309,15 @@
 		D9A01E5216B712D1007F279B /* cannon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = cannon.png; sourceTree = "<group>"; };
 		D9A01E5416B715DB007F279B /* launchBtn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = launchBtn.png; sourceTree = "<group>"; };
 		D9A01E5516B715DB007F279B /* launchBtnWhenPressed.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = launchBtnWhenPressed.png; sourceTree = "<group>"; };
+		D9A071C716CAEAB900D1340A /* missile_1_0 copy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "missile_1_0 copy.png"; sourceTree = "<group>"; };
+		D9A071C816CAEAB900D1340A /* missile_3_0 copy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "missile_3_0 copy.png"; sourceTree = "<group>"; };
 		D9A0AA7D1695ED33003E5140 /* warrior1_0.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = warrior1_0.png; path = Resources/warrior1_0.png; sourceTree = "<group>"; };
 		D9A5070916A7A395005D22A6 /* Starfield.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Starfield.jpg; sourceTree = "<group>"; };
 		D9A5071D16A88CDF005D22A6 /* Icon@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon@2x.png"; sourceTree = "<group>"; };
 		D9A5071F16A88D19005D22A6 /* Icon@2x_retina.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Icon@2x_retina.png"; sourceTree = "<group>"; };
 		D9A7DFA916B77DF9001A3CA1 /* slice_4_4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = slice_4_4.png; sourceTree = "<group>"; };
+		D9B23D4F16D98CE90099E653 /* ironball.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ironball.png; path = Resources/ironball.png; sourceTree = "<group>"; };
+		D9B23D5116D98CF30099E653 /* cannon2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = cannon2.png; path = Resources/cannon2.png; sourceTree = "<group>"; };
 		D9CC4EA0169262C3001BDAD2 /* document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = document.h; sourceTree = "<group>"; };
 		D9CC4EA1169262C3001BDAD2 /* filestream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = filestream.h; sourceTree = "<group>"; };
 		D9CC4EA3169262C3001BDAD2 /* pow10.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pow10.h; sourceTree = "<group>"; };
@@ -1850,6 +1864,10 @@
 		D98A721F162B21E000E5EBA5 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D9B23D5116D98CF30099E653 /* cannon2.png */,
+				D9B23D4F16D98CE90099E653 /* ironball.png */,
+				D9A071C716CAEAB900D1340A /* missile_1_0 copy.png */,
+				D9A071C816CAEAB900D1340A /* missile_3_0 copy.png */,
 				D99CB31916C05FF600F3AE3C /* MeagaLaser-1-3.png */,
 				D99CB31816C05FF600F3AE3C /* MeagaLaser-1-2.png */,
 				D99CB31716C05FF600F3AE3C /* MeagaLaser-1-1.png */,
@@ -2730,6 +2748,10 @@
 		D98A74BB162B21E400E5EBA5 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				D9517F2216D9145A00601EB7 /* MLSearch.h */,
+				D9517F2116D9145A00601EB7 /* MLSearch.cpp */,
+				D9517F1F16D5C7E900601EB7 /* GLES-Render.h */,
+				D9517F1E16D5C7E900601EB7 /* GLES-Render.cpp */,
 				D98A74BC162B21E400E5EBA5 /* AppDelegate.h */,
 				D98A74BD162B21E400E5EBA5 /* AppDelegate.cpp */,
 				D98A74BF162B21E400E5EBA5 /* SpaceScene.h */,
@@ -3004,6 +3026,10 @@
 				D99CB31A16C05FF600F3AE3C /* MeagaLaser-1-1.png in Resources */,
 				D99CB31B16C05FF600F3AE3C /* MeagaLaser-1-2.png in Resources */,
 				D99CB31C16C05FF600F3AE3C /* MeagaLaser-1-3.png in Resources */,
+				D9A071C916CAEAB900D1340A /* missile_1_0 copy.png in Resources */,
+				D9A071CA16CAEAB900D1340A /* missile_3_0 copy.png in Resources */,
+				D9B23D5016D98CE90099E653 /* ironball.png in Resources */,
+				D9B23D5216D98CF30099E653 /* cannon2.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3339,6 +3365,8 @@
 				D95610EE16AD80EC0008A7F5 /* b2WheelJoint.cpp in Sources */,
 				D95610EF16AD80EC0008A7F5 /* b2Rope.cpp in Sources */,
 				D9A01E5016B71213007F279B /* Catapult.cpp in Sources */,
+				D9517F2016D5C7E900601EB7 /* GLES-Render.cpp in Sources */,
+				D9517F2316D9145A00601EB7 /* MLSearch.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

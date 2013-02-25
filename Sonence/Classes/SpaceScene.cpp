@@ -452,6 +452,7 @@ void SpaceSceneLayer::update(float dt) {
                 float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
+                
                 dataStoreHandler->saveData("Target_Practice",(double) sineTones[index],  (double) (toneGenHelp->getVolume() * tmpVol), earIndex, touchAttempts,touchTime, finalTime);
                 
                 //char json[100];
@@ -512,7 +513,7 @@ void SpaceSceneLayer::update(float dt) {
         distance++;
     }
     
-    if (_health == 0 && !reloading) {
+    if (_health <= 0 && !reloading) {
         reloading = true;
         this->scheduleOnce(schedule_selector(SpaceSceneLayer::reload),reloadTime);
         hpBar->runAction(CCProgressFromTo::create(reloadTime, 0.0, 100.0));
@@ -692,6 +693,7 @@ void SpaceSceneLayer::moveEnemy() {
 
 void SpaceSceneLayer::reload() {
     _health = 100;
+    reloading = false;
 }
 
 void SpaceSceneLayer::spawnEnemy()
@@ -980,36 +982,6 @@ void SpaceSceneLayer::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* 
     touchAttempts++;
 }
 
-void SpaceSceneLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
-#define KFILTERINGFACTOR 0.1
-#define KRESTACCELX -0.0
-#define KSHIPMAXPOINTSPERSEC (winSize.height*0.5)
-#define KMAXDIFFX 0.2
-    
-    double rollingX ;
-    
-    // Cocos2DX inverts X and Y accelerometer depending on device orientation
-    // in landscape mode right x=-y and y=x !!! (Strange and confusing choice)
-    pAccelerationValue->x = pAccelerationValue->x ;
-    rollingX = (pAccelerationValue->x * KFILTERINGFACTOR) + (rollingX * (1.0 - KFILTERINGFACTOR));
-    float accelX = pAccelerationValue->x - rollingX ;
-    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
-    float accelDiff = accelX - KRESTACCELX;
-    float accelFraction = accelDiff / KMAXDIFFX;
-    _shipPointsPerSecY = KSHIPMAXPOINTSPERSEC * accelFraction;
-    
-    // Flame Collision
-    CCObject *itFlame;
-    CCARRAY_FOREACH( _enemies,itFlame) {
-        CCParticleSystem *emitter = (CCParticleSystem *) itFlame;
-        if ( ! emitter->isVisible() )
-            continue ;
-        emitter->stopAllActions();
-        emitter->runAction(CCMoveTo::create(8,playerShip->getPosition()));
-    }
-}
-
-
 void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
 {
     CCScene* pScene = MainMenu::create();
@@ -1057,6 +1029,19 @@ void SpaceSceneLayer::nextLevel()
     
     tutorialText->setColor(ccc3(0,0,255));
     tutorialText->runAction(CCSequence::create (fadeIn,waitDelay,fadeOut,fadeIn,waitDelay,fadeOut,NULL));
+    
+    seed_freq = floorf(randomValueBetween(20.0,4000.0));
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn1_L), 1.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn2_L), 2.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn3_L), 3.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn4_L), 4.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn5_L), 5.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn1_R), 6.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn2_R), 7.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn3_R), 8.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn4_R), 9.0f);
+    this->scheduleOnce(schedule_selector(SpaceSceneLayer::spawn5_R), 10.0f);
+    
     
     level++;
 }

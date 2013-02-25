@@ -5,6 +5,7 @@
 #include "cocos2d.h"
 #include "AudiogramScene.h"
 
+
 #include <sstream>
 
 #define USE_CHUNKED 1
@@ -89,6 +90,9 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     winHeight = CCDirector::sharedDirector()->getWinSize().width;
     
     this->initPhysics();
+    m_pointCount = 0;
+    
+    searchHelper = new MLSearch();
     
     //////////////////////////////
     //
@@ -114,11 +118,11 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     this->addChild(scoreLabel, 1);
     scoreLabel->setVisible(false);
     
-    tutorialText->setPosition(ccp(winHeight/2, winWidth/2 ));
-    tutorialText2->setPosition(ccp(winHeight/2, winWidth/2 ));
-    tutorialText3->setPosition(ccp(winHeight/2, winWidth/2 ));
-    tutorialText4->setPosition(ccp(winHeight/2, winWidth/2 ));
-    tutorialText5->setPosition(ccp(winHeight/2, winWidth/2 ));
+    tutorialText->setPosition(ccp(winHeight/2, winWidth/2));
+    tutorialText2->setPosition(ccp(winHeight/2, winWidth/2));
+    tutorialText3->setPosition(ccp(winHeight/2, winWidth/2));
+    tutorialText4->setPosition(ccp(winHeight/2, winWidth/2));
+    tutorialText5->setPosition(ccp(winHeight/2, winWidth/2));
     
     stringstream tempString;
     tempString<<"RED ALERT!\n Incoming Alien Fighters!";
@@ -309,8 +313,9 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     sineTones = (float *) calloc(sizeof(float),KNUMENEMIES); // Tone array
     timeTargets = (float *) calloc(sizeof(float),KNUMENEMIES);
     alphaTargets = (float *) calloc(sizeof(float),KNUMENEMIES);
-    _asteroids = new CCArray();
-    _enemies = new CCArray();
+    active_lanes = new CCArray();
+    coins = new CCArray();
+    homing_missiles = new CCArray();
     _AIEnemies = new CCArray();
     
     //Set up sprite
@@ -325,13 +330,13 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
 #endif
     addChild(parent, 0, kTagParentNode);
     
-    for(int i = 0; i < KNUMENEMIES; i++) {
+    /*for(int i = 0; i < KNUMENEMIES; i++) {
         EnemySprite *enemy = new EnemySprite();
         frame = frameCache->spriteFrameByName("slice_4_2.png");
         enemy->initWithTexture(m_pSpriteTexture);
         enemy->autorelease();
         parent->addChild(enemy);
-        _enemies->addObject(enemy);
+        homing_missiles->addObject(enemy);
         // Define the dynamic body.
         //Set up a 1m squared box in the physics world
         b2BodyDef bodyDef;
@@ -351,11 +356,12 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
         fixtureDef.density = 1.0f;
         fixtureDef.friction = 0.3f;
         body->CreateFixture(&fixtureDef);
-        body->SetLinearVelocity(b2Vec2(-50.0f,0.0f));
+        //body->SetLinearVelocity(b2Vec2(-50.0f,0.0f));
         
         enemy->setPhysicsBody(body);
     }
     
+    */
     
     for(int i = 0; i < KNUMENEMIES; i++) {
         CCSprite *enemy = CCSprite::create("warrior1_0.png");
@@ -371,10 +377,21 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
         CCSprite *asteroid = CCSprite::create("slice_3_0.png");
         asteroid->setVisible(false);
         addChild(asteroid);
-        _asteroids->addObject(asteroid);
+        coins->addObject(asteroid);
         _spawnQueue->addObject(CCInteger::create(i));
         
     }
+
+#define NUM_OF_LANES 5
+    for (int i=0; i<NUM_OF_LANES; i++) {
+        CCSprite *lane = CCSprite::create("MeagaLaser-1-1.png");
+        active_lanes->addObject(lane);
+        lane->setVisible(false);
+        lane->setRotation(180.0f);
+        lane->setScale(winHeight/lane->getContentSize().height);
+        addChild(lane);
+    }
+    
 }
 
 SpacePhysicsLayer::~SpacePhysicsLayer(void)
@@ -397,11 +414,13 @@ void SpacePhysicsLayer::onEnter()
     tutorialDuration = 10 * 1000.0;
     radarRadius = winWidth/2;
     enemyVelocity = winWidth/20.0;
-    playedTutorial = false;
+    playedTutorial = true;
     if (!playedTutorial) {
         this->scheduleOnce(schedule_selector(SpacePhysicsLayer::playTutorial), 2.0);
         this->scheduleOnce(schedule_selector(SpacePhysicsLayer::endTutorial), 35.0);
     }
+    
+    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnAIEnemy), 2.0);
     
     _nextAsteroid = 0;
     _curAsteroidCount = 0;
@@ -416,21 +435,24 @@ void SpacePhysicsLayer::initPhysics()
     gravity.Set(0.0f, 0.0f);
     world = new b2World(gravity);
     
+    //m_destructionListener.test = this;
+    //world->SetDestructionListener(&m_destructionListener);
+    //world->SetContactListener(this);
     
     // Do we want to let bodies sleep?
     world->SetAllowSleeping(true);
     
     world->SetContinuousPhysics(true);
-         //m_debugDraw = new GLESDebugDraw( PTM_RATIO );
-         //world->SetDebugDraw(m_debugDraw);
+    m_debugDraw = new GLESDebugDraw( PTM_RATIO );
+    world->SetDebugDraw(m_debugDraw);
     
     uint32 flags = 0;
-    flags += b2Draw::e_shapeBit;
-    //        flags += b2Draw::e_jointBit;
+    //flags += b2Draw::e_shapeBit;
+    //       flags += b2Draw::e_jointBit;
     //        flags += b2Draw::e_aabbBit;
     //        flags += b2Draw::e_pairBit;
     //        flags += b2Draw::e_centerOfMassBit;
-    //m_debugDraw->SetFlags(flags);
+    m_debugDraw->SetFlags(flags);
     
 }
 
@@ -501,10 +523,8 @@ void SpacePhysicsLayer::update(float dt) {
     if (!enemySpawned && playedTutorial) {
         enemySpawned = true;
         
-        float spawnRate = curTimeMillis/5000.0;
-        
-        this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnRandomEnemy), 2.0 - spawnRate);
-        this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnAIEnemy), 2.0 - spawnRate);
+        //float spawnRate = curTimeMillis/5000.0;
+        this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnRandomEnemy), 10.0);
     }
     
     if (_curAsteroidCount < KNUMASTEROIDS || _nextAsteroid != 0 ) {
@@ -523,7 +543,7 @@ void SpacePhysicsLayer::update(float dt) {
     
     int index = 0;
     CCObject *itAster, *itLaser;
-    CCARRAY_FOREACH( _asteroids,itAster) {
+    CCARRAY_FOREACH( coins,itAster) {
         CCSprite *asteroid = (CCSprite *) itAster;
         if ( ! asteroid->isVisible() )
             continue ;
@@ -549,7 +569,7 @@ void SpacePhysicsLayer::update(float dt) {
     
     // Enemy Collision
     CCObject *itEnemy;
-    CCARRAY_FOREACH( _enemies,itEnemy) {
+    CCARRAY_FOREACH( homing_missiles,itEnemy) {
         EnemySprite *enemy = (EnemySprite *) itEnemy;
         if ( ! enemy->isVisible() )
             continue ;
@@ -569,7 +589,7 @@ void SpacePhysicsLayer::update(float dt) {
                 float tmpVol = toneGenHelp->removeTone(index);
                 score += 10;
                 enemySpawned = false;
-                dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[index], (double) tmpVol, earIndex, touchAttempts,initTime, finalTime);
+                //dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[index], (double) tmpVol, earIndex, touchAttempts,initTime, finalTime);
                 
                 //char json[100];
                 //sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
@@ -591,6 +611,7 @@ void SpacePhysicsLayer::update(float dt) {
                 continue ;
             }
         }
+
         if (playerShip->boundingBox().intersectsRect(enemy->boundingBox())) {
             enemy->setVisible(false);
             setEnemyInvisible(enemy);
@@ -603,6 +624,25 @@ void SpacePhysicsLayer::update(float dt) {
             hpBar->setPercentage(_health);
         }
         index++;
+    }
+    CCObject *itLane;
+    CCARRAY_FOREACH( active_lanes,itLane) {
+        CCSprite *lane = (CCSprite *) itLane;
+        if (lane->isVisible() && lane->boundingBox().intersectsRect(playerShip->boundingBox())){
+            lane->setVisible(false);
+            setEnemyInvisible(lane);
+            //removeChild(active_lane, 1);
+            toneGenHelp->removeTone(index);
+            playerShip->runAction( CCBlink::create(1.0, 5));
+            alphaTargets[index] = 0.0;
+            enemySpawned = false;
+            _health -= 10.0;
+            laneScale = 0.0;
+            hpBar->setPercentage(_health);
+            float tmpVol = toneGenHelp->removeTone(index);
+            dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[index], (double) tmpVol, earIndex, 0,0,0);
+            hitFlag = true;
+        }
     }
     
     //////////////////////////////
@@ -640,12 +680,73 @@ void SpacePhysicsLayer::update(float dt) {
     distLabel->setVisible(true);
     scoreLabel->setVisible(true);
     
+    if (enemySpawned && laneScale < 2.0) {
+        laneScale += 0.01;
+        //active_lane->setScaleY(laneScale);
+    }
+    
+    
+    // We are going to destroy some bodies according to contact
+    // points. We must buffer the bodies that should be destroyed
+    // because they may belong to multiple contact points.
+    const int32 k_maxNuke = 6;
+    b2Body* nuke[k_maxNuke];
+    int32 nukeCount = 0;
+    
+    // Traverse the contact results. Destroy bodies that
+    // are touching heavier bodies.
+    for (int32 i = 0; i < m_pointCount; ++i)
+    {
+        ContactPoint* point = m_points + i;
+        
+        b2Body* body1 = point->fixtureA->GetBody();
+        b2Body* body2 = point->fixtureB->GetBody();
+        float32 mass1 = body1->GetMass();
+        float32 mass2 = body2->GetMass();
+        
+        if (mass1 > 0.0f && mass2 > 0.0f)
+        {
+            if (mass2 > mass1)
+            {
+                nuke[nukeCount++] = body1;
+            }
+            else
+            {
+                nuke[nukeCount++] = body2;
+            }
+            
+            if (nukeCount == k_maxNuke)
+            {
+                break;
+            }
+        }
+    }
+    
+    // Sort the nuke array to group duplicates.
+    std::sort(nuke, nuke + nukeCount);
+    
+    // Destroy the bodies, skipping duplicates.
+    int32 i = 0;
+    while (i < nukeCount)
+    {
+        b2Body* b = nuke[i++];
+        while (i < nukeCount && nuke[i] == b)
+        {
+            ++i;
+        }
+        
+        if (b != m_bomb)
+        {
+            world->DestroyBody(b);
+        }
+    }
+    
     //It is recommended that a fixed time step is used with Box2D for stability
     //of the simulation, however, we are using a variable time step here.
     //You need to make an informed choice, the following URL is useful
     //http://gafferongames.com/game-physics/fix-your-timestep/
     
-    int velocityIterations = 8;
+    int velocityIterations = 1;
     int positionIterations = 1;
     
     // Instruct the world to perform a single step of simulation. It is
@@ -660,33 +761,10 @@ void SpacePhysicsLayer::draw(){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     glLineWidth(2);
-    ccDrawColor4F(0.0, 1.0, 0.0, 0.3);
+    
     for (int i = 0; i < 10; i++) {
-        ccDrawCircle( playerShip->getPosition(), winWidth/10 * i, 0, 50, false);
-    }
-    
-    float tmp = TWOPI / 40.0;
-    int i, n = 120;
-    float da, ga, a, b;
-    int dt = (int)(getTimeTick()/10) % n;
-    ccDrawColor4F(0.0, 1.0, 1.0, 0.3);
-    for (int i = 4; i < 17; i++)  {
-        a = (float)i * tmp;
-        ccDrawLine(playerShip->getPosition(), ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(a), winWidth * sin(a))));
-    }
-    
-    ccDrawColor4F(1.0, 0.0, 0.0, 1.0);
-    ccDrawCircle(playerShip->getPosition(), radarRadius, 0, 50, false);
-    
-    // Radar Animation
-    da = TWOPI / (float)n;
-    
-    for (i = 0 + dt; i < n/5 + dt; i++)  {
-        a = (float)i * da;
-        b = a + da;
-        ga = 0.8*((float)(i-dt)/(float)(n/5));
-        CCPoint filledVertices[] = { playerShip->getPosition(), ccpAdd(playerShip->getPosition(),ccp(radarRadius * cos(a), radarRadius * sin(a))), ccpAdd(playerShip->getPosition(),ccp(radarRadius * cos(b), radarRadius * sin(b)))};
-        ccDrawSolidPoly(filledVertices, 3, ccc4f(0.0,ga, 0.0, ga));
+        ccColor4F color = ccc4f((float)((i)%5),(float)((i+1)%5),(float)((i+3)%5),0.2);
+        ccDrawSolidRect(ccp(i*winHeight/10,0), ccp((i+1)*winHeight/10,winWidth), color);
     }
     
     CCLayer::draw();
@@ -788,7 +866,7 @@ void SpacePhysicsLayer::moveEnemy() {
     
     
     // Init enemy
-    CCSprite *enemy = (CCSprite *) _enemies->objectAtIndex(0);
+    CCSprite *enemy = (CCSprite *) homing_missiles->objectAtIndex(0);
     enemy->setOpacity(255);
     enemy->stopAllActions();
     
@@ -828,7 +906,7 @@ void SpacePhysicsLayer::tutorialSpawn(int freqIndex, int earIndex)
     float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     float tmp = TWOPI / 40.0;
-    EnemySprite *enemy = (EnemySprite *) _enemies->objectAtIndex(0);  // Grab enemy object
+    EnemySprite *enemy = (EnemySprite *) homing_missiles->objectAtIndex(0);  // Grab enemy object
     enemy->stopAllActions();
     enemy->setOpacity(255);
     enemy->setVisible(true);
@@ -841,7 +919,7 @@ void SpacePhysicsLayer::tutorialSpawn(int freqIndex, int earIndex)
     }
     sineTones[_nextAsteroid] = randFrequency;
     timeTargets[_nextAsteroid] = randDuration;
-    toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
+    //toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
     toneGenHelp->maxToneVolume();
     
     CCAnimation *normal = animCache->animationByName("enemy"); // Animation
@@ -866,7 +944,7 @@ void SpacePhysicsLayer::spawnRandomEnemy()
 {
     enemyIndex = (int) floorf(randomValueBetweenD(0.0,6.0)); // Only generate harmonic pure-tones
     earIndex = (int)(randomValueBetweenD(0.0,2.0));
-    spawnEnemyAtLoc(enemyIndex,earIndex);
+    spawnTones(enemyIndex,earIndex);
     touchTimerFlag = true;
     initTime = getTimeTick();
     touchAttempts = 0;
@@ -875,43 +953,43 @@ void SpacePhysicsLayer::spawnRandomEnemy()
 
 void SpacePhysicsLayer::spawn1_L()
 {
-    tutorialSpawn(1,0);
+    spawnEnemyAtLoc(1,0);
 }
 void SpacePhysicsLayer::spawn2_L()
 {
-    tutorialSpawn(2,0);
+    spawnEnemyAtLoc(2,0);
 }
 void SpacePhysicsLayer::spawn3_L()
 {
-    tutorialSpawn(3,0);
+    spawnEnemyAtLoc(3,0);
 }
 void SpacePhysicsLayer::spawn4_L()
 {
-    tutorialSpawn(4,0);
+    spawnEnemyAtLoc(4,0);
 }
 void SpacePhysicsLayer::spawn5_L()
 {
-    tutorialSpawn(5,0);
+    spawnEnemyAtLoc(5,0);
 }
 void SpacePhysicsLayer::spawn1_R()
 {
-    tutorialSpawn(1,1);
+    spawnEnemyAtLoc(1,1);
 }
 void SpacePhysicsLayer::spawn2_R()
 {
-    tutorialSpawn(2,1);
+    spawnEnemyAtLoc(2,1);
 }
 void SpacePhysicsLayer::spawn3_R()
 {
-    tutorialSpawn(3,1);
+    spawnEnemyAtLoc(3,1);
 }
 void SpacePhysicsLayer::spawn4_R()
 {
-    tutorialSpawn(4,1);
+    spawnEnemyAtLoc(4,1);
 }
 void SpacePhysicsLayer::spawn5_R()
 {
-    tutorialSpawn(5,1);
+    spawnEnemyAtLoc(5,1);
 }
 
 void SpacePhysicsLayer::spawnLowFreqEnemy()
@@ -931,7 +1009,7 @@ void SpacePhysicsLayer::spawnEnemyAtLoc(int freqIndex, int earIndex)
     float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
     
     float tmp = TWOPI / 40.0;
-    EnemySprite *enemy = (EnemySprite *) _enemies->objectAtIndex(0);  // Grab enemy object
+    EnemySprite *enemy = (EnemySprite *) homing_missiles->objectAtIndex(0);  // Grab enemy object
     //enemy->initWithTexture(m_pSpriteTexture);
     //enemy->autorelease();
     enemy->stopAllActions();
@@ -953,7 +1031,7 @@ void SpacePhysicsLayer::spawnEnemyAtLoc(int freqIndex, int earIndex)
     }
     sineTones[_nextAsteroid] = randFrequency;
     timeTargets[_nextAsteroid] = randDuration;
-    toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
+    //toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
     
     //CCAnimation *normal = animCache->animationByName("enemy"); // Animation
     //normal->setRestoreOriginalFrame(true);
@@ -1004,24 +1082,106 @@ void SpacePhysicsLayer::spawnAIEnemy()
     aiEnemy->setOpacity(255);
     aiEnemy->setVisible(true);
     aiEnemy->setRotation(90.0f);
+    aiEnemy->setScale(0.5);
     
     aiEnemy->setPosition(ccp(winHeight/2,winWidth/2));
     
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(10.0,ccp(0,winHeight/2)),CCMoveTo::create(10.0,ccp(winWidth,winHeight/2)),NULL);
+    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(10.0,ccp(0,winWidth*0.75)),CCMoveTo::create(10.0,ccp(winHeight,winWidth*0.75)),NULL);
     
     CCRepeatForever *moveLoop = CCRepeatForever::create((CCActionInterval *)moveSeq);
     aiEnemy->runAction(moveLoop);
+    
+    this->schedule(schedule_selector(SpacePhysicsLayer::spawnAttackPatterns), 2.0f);
+}
+
+void SpacePhysicsLayer::spawnAttackPatterns()
+{
+    CCSprite *aiEnemy = (CCSprite *) _AIEnemies->objectAtIndex(0);
+    
+    CCSpriteBatchNode *parent = CCSpriteBatchNode::create("missile_1_0 copy.png", 100);
+    m_pSpriteTexture = parent->getTexture();
+    
+    addChild(parent, 0, kTagParentNode);
+    
+    float degRot = 0.0;
+    for (int i = 0; i < 10; i++) {
+        
+        EnemySprite *shot = new EnemySprite();
+        shot->initWithTexture(m_pSpriteTexture);
+        b2Vec2 vel;
+        b2BodyDef bd;
+        bd.type = b2_dynamicBody;
+        //body->SetTransform(b2Vec2(aiEnemy->getPosition().x,aiEnemy->getPosition().y), 0.0);
+        bd.position.Set((aiEnemy->getPosition().x + 50*cos(degRot))/PTM_RATIO,(aiEnemy->getPosition().y + 50*sin(degRot))/PTM_RATIO);
+        b2Body* body = world->CreateBody(&bd);
+        
+        b2PolygonShape shape;
+        shape.SetAsBox(0.125f, 0.125f);
+        body->CreateFixture(&shape, 1.0f);
+        vel = b2Vec2(cos(degRot),sin(degRot));
+        vel.Normalize();
+        body->SetLinearVelocity(vel);
+        degRot += 30.0;
+        shot->setPhysicsBody(body);
+        shot->setVisible(true);
+        addChild(shot);
+    }
+}
+
+void SpacePhysicsLayer::spawnTones(int freqIndex, int earIndex)
+{
+    double randDuration = randomValueBetweenD(2.0,5.0);
+    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
+
+    
+    toneGenHelp->playDecreasingTone(randFrequency, randDuration, earIndex);   // Play pure-tone
+    toneGenHelp->maxToneVolume();
+    this->earIndex = earIndex;
+    
+    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnBeam),randDuration);
+    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::deSpawnBeam),randDuration + 2.0);
+    //CCProgressTo *to2 = CCProgressTo::create(2, 100);
+    //active_lane->runAction(to2);
+}
+
+void SpacePhysicsLayer::spawnBeam()
+{
+    CCObject *laneObj;
+    int index = 0;
+    CCARRAY_FOREACH( active_lanes,laneObj) {
+        CCSprite *lane = (CCSprite *) laneObj;
+        lane->setVisible(true);
+        if (earIndex)
+            lane->setPosition(ccp((10 - index)*(winHeight/10) - winHeight/20,winWidth/2));
+        else
+            lane->setPosition(ccp(index*(winHeight/10) - winHeight/20,winWidth/2));
+        index++;
+    }
+    enemySpawned = false;
+}
+
+void SpacePhysicsLayer::deSpawnBeam()
+{
+    CCObject *laneObj;
+    CCARRAY_FOREACH( active_lanes,laneObj) {
+        CCSprite *lane = (CCSprite *) laneObj;
+        lane->setVisible(false);
+    }
+    enemySpawned = false;
+    float tmpVol = toneGenHelp->removeTone(0);
+    if (!hitFlag)
+        dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[0], (double) tmpVol, earIndex, 1,0,0);
 }
 
 void SpacePhysicsLayer::spawnAsteroid()
 {
     double randDuration = randomValueBetweenD(2.0,3.0);
-    int multiple = (int) floorf(randomValueBetweenD(3.0,11.0)); // Only generate harmonic pure-tones
+    int multiple = (int) floorf(randomValueBetweenD(0.0,10.0)); // Only generate harmonic pure-tones
     float randY = winHeight/10.0 * multiple;
     
     CCInteger *randomIndex = (CCInteger *) _spawnQueue->randomObject();
     
-    CCSprite *asteroid = (CCSprite *) _asteroids->objectAtIndex(randomIndex->getValue());
+    CCSprite *asteroid = (CCSprite *) coins->objectAtIndex(randomIndex->getValue());
     asteroid->stopAllActions();
     asteroid->setTag(randomIndex->getValue());
     CCAnimation *normal = animCache->animationByName("asteroid");
@@ -1068,7 +1228,7 @@ void SpacePhysicsLayer::setAsteroidInvisible(CCNode * node) {
 
 void SpacePhysicsLayer::setEnemyInvisible(CCNode * node) {
     node->setVisible(false);
-    //enemySpawned = false;
+    enemySpawned = false;
 }
 
 void SpacePhysicsLayer::setFireInvisible(CCNode *emitter){
@@ -1076,7 +1236,6 @@ void SpacePhysicsLayer::setFireInvisible(CCNode *emitter){
     asteroidSpawned = false;
     emitter->setVisible(false);
     _backgroundNode->removeChild(emitter, 1);
-    
 }
 
 void SpacePhysicsLayer::stopTones(){
@@ -1087,6 +1246,7 @@ void SpacePhysicsLayer::ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent
 {
     
 }
+
 void SpacePhysicsLayer::ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event)
 {
     CCPoint mean_touch;
@@ -1164,16 +1324,18 @@ void SpacePhysicsLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
     float accelDiff = accelX - KRESTACCELX;
     float accelFraction = accelDiff / KMAXDIFFX;
     _shipPointsPerSecY = KSHIPMAXPOINTSPERSEC * accelFraction;
+        
+    /*EnemySprite *enemy = (EnemySprite *) homing_missiles->objectAtIndex(0);  // Grab enemy object
+
+    b2Body *body = enemy->getPhysicsBody();
+    b2Vec2 enemyPos = PTM_RATIO * body->GetPosition();
+    b2Vec2 shipPos = b2Vec2(playerShip->getPosition().x,playerShip->getPosition().y);
+    b2Vec2 velocity = enemyPos - shipPos;
+    velocity = -1*velocity;
+    velocity.Normalize();
     
-    // Flame Collision
-    CCObject *itFlame;
-    CCARRAY_FOREACH( _enemies,itFlame) {
-        CCParticleSystem *emitter = (CCParticleSystem *) itFlame;
-        if ( ! emitter->isVisible() )
-            continue ;
-        emitter->stopAllActions();
-        emitter->runAction(CCMoveTo::create(8,playerShip->getPosition()));
-    }
+    body->SetLinearVelocity(velocity);
+     */
 }
 
 
@@ -1227,6 +1389,36 @@ void SpacePhysicsLayer::nextLevel()
     level++;
 }
 
+void SpacePhysicsLayer::PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
+{
+    const b2Manifold* manifold = contact->GetManifold();
+    
+    if (manifold->pointCount == 0)
+    {
+        return;
+    }
+    
+    b2Fixture* fixtureA = contact->GetFixtureA();
+    b2Fixture* fixtureB = contact->GetFixtureB();
+    
+    b2PointState state1[b2_maxManifoldPoints], state2[b2_maxManifoldPoints];
+    b2GetPointStates(state1, state2, oldManifold, manifold);
+    
+    b2WorldManifold worldManifold;
+    contact->GetWorldManifold(&worldManifold);
+    
+    for (int32 i = 0; i < manifold->pointCount && m_pointCount < k_maxContactPoints; ++i)
+    {
+        ContactPoint* cp = m_points + m_pointCount;
+        cp->fixtureA = fixtureA;
+        cp->fixtureB = fixtureB;
+        cp->position = worldManifold.points[i];
+        cp->normal = worldManifold.normal;
+        cp->state = state2[i];
+        ++m_pointCount;
+    }
+}
+
 
 iOSBridge::ToneGeneratorHelper* SpacePhysicsScene::getToneGenerator()
 {
@@ -1278,6 +1470,7 @@ SpacePhysicsScene::SpacePhysicsScene()
     pauseButton->setPosition( ccp(s.width*0.95,s.height*0.95) );
     
     addChild(pMenu, 1);
+    
 }
 
 
@@ -1335,3 +1528,10 @@ void SpacePhysicsScene::RecursivelyResumeAllChildren( CCNode * node ) {
         RecursivelyResumeAllChildren(n);
     }
 }
+
+void DestructionListener::SayGoodbye(b2Joint* joint)
+{
+    test->JointDestroyed(joint);
+}
+
+

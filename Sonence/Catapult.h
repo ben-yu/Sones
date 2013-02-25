@@ -21,6 +21,7 @@ class CannonBallSprite : public CCSprite
 public:
     CannonBallSprite();
     void setPhysicsBody(b2Body * body);
+    b2Body* getPhysicsBody();
     virtual bool isDirty(void);
     virtual cocos2d::CCAffineTransform nodeToParentTransform(void);
 private:
@@ -44,7 +45,6 @@ public:
     
     void addNewSpriteAtPosition(CCPoint p);
     void update(float dt);
-    virtual void ccTouchesEnded(CCSet* touches, CCEvent* event);
     void startGameCallback(CCObject* pSender);
     
     float randomValueBetween( float low , float high );
@@ -52,15 +52,24 @@ public:
     iOSBridge::ToneGeneratorHelper *toneGenHelp;    // Sound Generator
     iOSBridge::DataStore *dataStoreHandler;         // Data Store Handler
     
+    virtual void ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    virtual void ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    virtual void ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    CCTexture2D* m_pSpriteTexture;
+    CCSprite* cannon;
+    
+    CannonBallSprite* cannonBall;
+    float vol_meas;
+    float curAngle = 0.0f;
+    int countTimes;
+    
+    int e_columnCount = 8;
+    int e_rowCount = 10;
+    
     //CREATE_NODE(Box2DTestLayer);
 
 private:
-    CCTexture2D* m_pSpriteTexture;
-    float vol_meas;
-    int countTimes;
-    
-    int e_columnCount = 5;
-    int e_rowCount = 6;
+
 } ;
 
 class CannonScene : public cocos2d::CCScene
@@ -84,13 +93,17 @@ public:
     void RecursivelyPauseAllChildren(CCNode* node);
     void RecursivelyResumeAllChildren(CCNode* node);
     
+    void shootCannon();
+    
     void *rootVC;
     CCMenuItemImage *pauseButton;
-    
-private:
+    CCLabelTTF *powerLabel;
     CCScene* mainMenuPtr;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
     iOSBridge::DataStore *dataStoreHandler;
+    
+private:
+
     //rapidjson::Document jsonDoc;
     
 };

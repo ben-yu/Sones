@@ -8,9 +8,24 @@
 #include "document.h"
 #include "rapidjson.h"
 #include "Box2D.h"
+#include "GLES-Render.h"
+#include "MLSearch.h"
 
 
 USING_NS_CC;
+
+class SpacePhysicsLayer;
+
+const int32 k_maxContactPoints = 2048;
+
+struct ContactPoint
+{
+    b2Fixture* fixtureA;
+    b2Fixture* fixtureB;
+    b2Vec2 normal;
+    b2Vec2 position;
+    b2PointState state;
+};
 
 class EnemySprite : public CCSprite
 {
@@ -25,11 +40,27 @@ private:
 };
 
 
-class SpacePhysicsLayer : public CCLayer
+class DestructionListener : public b2DestructionListener
 {
-    b2World* world;
-    //GLESDebugDraw* m_debugDraw;
 public:
+    void SayGoodbye(b2Fixture* fixture) { B2_NOT_USED(fixture); }
+    void SayGoodbye(b2Joint* joint);
+    
+    SpacePhysicsLayer* test;
+};
+
+class SpacePhysicsLayer : public CCLayer, b2ContactListener
+{
+    
+    b2World* world;
+    GLESDebugDraw* m_debugDraw;
+    b2Body* m_bomb;
+    ContactPoint m_points[k_maxContactPoints];
+    int32 m_pointCount;
+    
+
+public:
+    DestructionListener m_destructionListener;
     
     const float TWOPI = 3.1415926535 * 2.0;
     
@@ -74,16 +105,37 @@ public:
     void tutorialSpawn(int freqIndex, int earIndex);
     void spawnEnemy();
     void spawnRandomEnemy();
+    void spawnBeam();
+    void deSpawnBeam();
     void moveEnemy();
     void spawnEnemyAtLoc(int freqIndex, int earIndex);
     void spawnLowFreqEnemy();
     void spawnHighFreqEnemy();
     void spawnAsteroid();
     void spawnAIEnemy();
+    void spawnAttackPatterns();
+    void spawnTones(int freqIndex, int earIndex);
     void nextLevel();
     
     void spawn1_L(); void spawn2_L(); void spawn3_L(); void spawn4_L(); void spawn5_L();
     void spawn1_R(); void spawn2_R(); void spawn3_R(); void spawn4_R(); void spawn5_R();
+    
+    // Let derived tests know that a joint was destroyed.
+    virtual void JointDestroyed(b2Joint* joint) { B2_NOT_USED(joint); }
+    
+    // Callbacks for derived classes.
+    virtual void BeginContact(b2Contact* contact) { B2_NOT_USED(contact); }
+    virtual void EndContact(b2Contact* contact) { B2_NOT_USED(contact); }
+    virtual void PreSolve(b2Contact* contact, const b2Manifold* oldManifold);
+    virtual void PostSolve(const b2Contact* contact, const b2ContactImpulse* impulse)
+    {
+        B2_NOT_USED(contact);
+        B2_NOT_USED(impulse);
+    }
+    
+    friend class DestructionListener;
+    friend class BoundaryListener;
+    friend class ContactListener;
     
     CREATE_FUNC(SpacePhysicsLayer);
     
@@ -97,23 +149,13 @@ private:
     CCSprite *_galaxy;
     CCSprite *_spacialanomaly;
     CCSprite *_spacialanomaly2;
-    CCSprite *playerShip;
-    CCSprite *txtWindow;
+    CCSprite *txtWindow;            // UI Stuff
     CCSprite *healthBar;
     CCProgressTimer *hpBar;
     CCTexture2D* m_pSpriteTexture;
     
-    CCArray  *_asteroids;
-    CCArray *_spawnQueue;
-    CCArray  *_enemies;
-    CCArray *_AIEnemies;
-    CCArray * _shipLasers;
-    CCParticleSystem*    m_emitter;
     
-    CCSpriteFrameCache *frameCache;
-    CCAnimationCache *animCache;
-    
-    // Game Resources - Labels
+    // Text Labels
     CCLabelTTF *distLabel;
     CCLabelTTF *scoreLabel;
     CCLabelTTF *tutorialText;
@@ -121,12 +163,28 @@ private:
     CCLabelTTF *tutorialText3;
     CCLabelTTF *tutorialText4;
     CCLabelTTF *tutorialText5;
-    
     CCMenu* tutorialSkipButton;
     
+    // NPC Sprites
+    CCSprite *playerShip;
+    CCSprite *boss;
+    
+    CCArray *active_lanes;
+    CCArray  *coins;
+    CCArray *_spawnQueue;
+    CCArray  *homing_missiles;
+    CCArray *_AIEnemies;
+    CCArray * _shipLasers;
+    CCParticleSystem*    m_emitter;
+    
+    CCSpriteFrameCache *frameCache;
+    CCAnimationCache *animCache;
+        
     iOSBridge::ToneGeneratorHelper *toneGenHelp;    // Sound Generator
     iOSBridge::DataStore *dataStoreHandler;         // Data Store Handler
     rapidjson::Document jsonDoc;
+    MLSearch *searchHelper;
+    
     void *rootVCPtr;
     
     float winWidth;
@@ -146,6 +204,7 @@ private:
     bool gameOver = false;
     bool spawnRegularEnemies;
     bool touchTimerFlag = false;
+    bool hitFlag = false;
     
     int score = 0;
     int distance = 0;
@@ -159,6 +218,7 @@ private:
     float initTime;
     float touchTime;
     float finalTime;
+    float laneScale;
     
     int _nextAsteroid;
     int _curAsteroidCount;

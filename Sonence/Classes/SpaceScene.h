@@ -39,7 +39,6 @@ public:
     virtual void ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
     virtual void ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
     virtual void ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
-    virtual void didAccelerate(CCAcceleration* pAccelerationValue);
     virtual void draw();
     
     float randomValueBetween( float low , float high );

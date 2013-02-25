@@ -22,6 +22,7 @@ class  ToneGeneratorHelper {
         void playRandomTone();
         void addTone(float frequency, double duration, int index);
         void playOscillatingTone(float frequency, double duration, int index);
+        void playDecreasingTone(float frequency, double duration, int index);
         float removeTone(int index);
         void playBackgroundMusic(std::string fileName);
         void enableBackground();
@@ -34,6 +35,7 @@ class  ToneGeneratorHelper {
         void playExplosion();
         float getAmplitude();
         float getVolume();
+        void oscillateBackground();
 
     
     private:
