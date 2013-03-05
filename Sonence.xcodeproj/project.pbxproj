@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D90DC62216E573C6006E5859 /* CountingGame.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D90DC62016E573C6006E5859 /* CountingGame.cpp */; };
+		D90DC62416E5757F006E5859 /* coma.png in Resources */ = {isa = PBXBuildFile; fileRef = D90DC62316E5757F006E5859 /* coma.png */; };
 		D916BE68168646AC0064E9B6 /* MainMenu.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D916BE66168646AC0064E9B6 /* MainMenu.cpp */; };
 		D9329CF71651416E001AC371 /* glyphicons_197_remove.png in Resources */ = {isa = PBXBuildFile; fileRef = D9329CF61651416E001AC371 /* glyphicons_197_remove.png */; };
 		D9329CFA16516B89001AC371 /* VolumeEnvelope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D9329CF916516B7C001AC371 /* VolumeEnvelope.cpp */; };
@@ -207,6 +209,7 @@
 		D95610EE16AD80EC0008A7F5 /* b2WheelJoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D95610BC16AD80EC0008A7F5 /* b2WheelJoint.cpp */; };
 		D95610EF16AD80EC0008A7F5 /* b2Rope.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D95610BF16AD80EC0008A7F5 /* b2Rope.cpp */; };
 		D95610F116AE08230008A7F5 /* explosion.wav in Resources */ = {isa = PBXBuildFile; fileRef = D95610F016AE08230008A7F5 /* explosion.wav */; };
+		D961D88C16E12C7A00778C25 /* missile.png in Resources */ = {isa = PBXBuildFile; fileRef = D961D88B16E12C7A00778C25 /* missile.png */; };
 		D96B89C2166BDAE4007D0B7B /* main_sprites.plist in Resources */ = {isa = PBXBuildFile; fileRef = D96B89C0166BDAE4007D0B7B /* main_sprites.plist */; };
 		D96B89C3166BDAE4007D0B7B /* main_sprites.pvr in Resources */ = {isa = PBXBuildFile; fileRef = D96B89C1166BDAE4007D0B7B /* main_sprites.pvr */; };
 		D96B89C5166BE401007D0B7B /* main_sprites.png in Resources */ = {isa = PBXBuildFile; fileRef = D96B89C4166BE401007D0B7B /* main_sprites.png */; };
@@ -474,6 +477,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D90DC62016E573C6006E5859 /* CountingGame.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CountingGame.cpp; path = Classes/CountingGame.cpp; sourceTree = "<group>"; };
+		D90DC62116E573C6006E5859 /* CountingGame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CountingGame.h; path = Classes/CountingGame.h; sourceTree = "<group>"; };
+		D90DC62316E5757F006E5859 /* coma.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = coma.png; path = Resources/coma.png; sourceTree = "<group>"; };
 		D916BE66168646AC0064E9B6 /* MainMenu.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MainMenu.cpp; path = Classes/MainMenu.cpp; sourceTree = "<group>"; };
 		D916BE67168646AC0064E9B6 /* MainMenu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MainMenu.h; path = Classes/MainMenu.h; sourceTree = "<group>"; };
 		D9329CF61651416E001AC371 /* glyphicons_197_remove.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = glyphicons_197_remove.png; path = Resources/glyphicons_197_remove.png; sourceTree = "<group>"; };
@@ -826,6 +832,7 @@
 		D95610BF16AD80EC0008A7F5 /* b2Rope.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = b2Rope.cpp; sourceTree = "<group>"; };
 		D95610C016AD80EC0008A7F5 /* b2Rope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = b2Rope.h; sourceTree = "<group>"; };
 		D95610F016AE08230008A7F5 /* explosion.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = explosion.wav; path = Resources/explosion.wav; sourceTree = "<group>"; };
+		D961D88B16E12C7A00778C25 /* missile.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = missile.png; path = Resources/missile.png; sourceTree = "<group>"; };
 		D96B89C0166BDAE4007D0B7B /* main_sprites.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = main_sprites.plist; path = Resources/main_sprites.plist; sourceTree = "<group>"; };
 		D96B89C1166BDAE4007D0B7B /* main_sprites.pvr */ = {isa = PBXFileReference; lastKnownFileType = file; name = main_sprites.pvr; path = Resources/main_sprites.pvr; sourceTree = "<group>"; };
 		D96B89C4166BE401007D0B7B /* main_sprites.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = main_sprites.png; path = Resources/main_sprites.png; sourceTree = "<group>"; };
@@ -1864,6 +1871,8 @@
 		D98A721F162B21E000E5EBA5 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				D961D88B16E12C7A00778C25 /* missile.png */,
+				D90DC62316E5757F006E5859 /* coma.png */,
 				D9B23D5116D98CF30099E653 /* cannon2.png */,
 				D9B23D4F16D98CE90099E653 /* ironball.png */,
 				D9A071C716CAEAB900D1340A /* missile_1_0 copy.png */,
@@ -2770,6 +2779,8 @@
 				D94362741652C882009FFBE4 /* DataStore.cpp */,
 				D9560FC516AD7F120008A7F5 /* SpacePhysics.h */,
 				D9560FC416AD7F120008A7F5 /* SpacePhysics.cpp */,
+				D90DC62116E573C6006E5859 /* CountingGame.h */,
+				D90DC62016E573C6006E5859 /* CountingGame.cpp */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -3030,6 +3041,8 @@
 				D9A071CA16CAEAB900D1340A /* missile_3_0 copy.png in Resources */,
 				D9B23D5016D98CE90099E653 /* ironball.png in Resources */,
 				D9B23D5216D98CF30099E653 /* cannon2.png in Resources */,
+				D961D88C16E12C7A00778C25 /* missile.png in Resources */,
+				D90DC62416E5757F006E5859 /* coma.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3367,6 +3380,7 @@
 				D9A01E5016B71213007F279B /* Catapult.cpp in Sources */,
 				D9517F2016D5C7E900601EB7 /* GLES-Render.cpp in Sources */,
 				D9517F2316D9145A00601EB7 /* MLSearch.cpp in Sources */,
+				D90DC62216E573C6006E5859 /* CountingGame.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

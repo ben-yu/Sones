@@ -31,7 +31,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
         
         // Background Music
         if (data->backgroundEnabled && data->oscillateBackground) {
-            amp = data->myAsymp[0]->tick();
+            amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[0]->tick() - 98.0)/20.0)));
             outz = amp * data->backgroundMusic->tick();
         } else if (data->backgroundEnabled  && !data->oscillateBackground) {
             outz = data->backgroundMusic->tick();
@@ -45,7 +45,8 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
                 amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[0]->tick() - 98.0)/20.0)));
                 fx = amp * data->sineWaves[0]->tick();
             } else {
-                fx = data->sineWaves[0]->tick();
+                amp = data->upperBound;
+                fx = amp * data->sineWaves[0]->tick();
             }
             
             // Explosion
@@ -218,6 +219,10 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     return audioData.backgroundEnabled;
 }
 
+- (void) setBackgroundStatus:(bool) status {
+    audioData.backgroundEnabled = status;
+}
+
 - (void) AddTone:(int) frequency
          timeConst:(double) duration
          toneNum:(int) index
@@ -227,6 +232,17 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.myAsymp[0]->setTime(duration);
     audioData.toneIndex = index;
     audioData.maxVol = false;
+}
+
+
+- (void) playConstantTone:(int) frequency
+       volume:(double) level
+         toneNum:(int) index
+{
+    audioData.sineWaves[0]->setFrequency(frequency);
+    audioData.upperBound = level;
+    audioData.toneIndex = index;
+    audioData.maxVol = true;
 }
 
 - (void) playOscillatingTone:(int) frequency
@@ -239,7 +255,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     audioData.toneIndex = index;
     audioData.maxVol = true;
     audioData.oscillate = true;
-    audioData.upperBound = 100.0;
+    audioData.upperBound = 0.1;
     audioData.oscillateBackground = true;
 }
 
@@ -303,6 +319,11 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 
 - (Float32) getVolume
 {
-    return MoAudio::getVolume();
+    return audioData.upperBound*MoAudio::getVolume();
+}
+
+- (void) setVolume:(float) level
+{
+    audioData.upperBound = level*MoAudio::getVolume();
 }
 @end

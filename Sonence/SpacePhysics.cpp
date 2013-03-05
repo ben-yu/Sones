@@ -7,6 +7,7 @@
 
 
 #include <sstream>
+#include <algorithm>
 
 #define USE_CHUNKED 1
 
@@ -21,6 +22,7 @@ bool SpacePhysicsLayer::accelEnable;
 
 enum {
     kTagParentNode = 1,
+    kTagMissileNode = 2,
 };
 
 
@@ -46,6 +48,11 @@ b2Body* EnemySprite::getPhysicsBody()
 bool EnemySprite::isDirty(void)
 {
     return true;
+}
+
+CCSprite * EnemySprite::create(const char *pszFileName)
+{
+    return CCSprite::create(pszFileName);
 }
 
 // returns the transform matrix according the Chipmunk Body values
@@ -224,8 +231,9 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     //////////////////////////////
     
     // create a sprite without texture
-    playerShip = CCSprite::create();
+    playerShip = new EnemySprite();
     CCSpriteFrame *frame = frameCache->spriteFrameByName("slice_0_0.png");
+    playerShip->initWithSpriteFrame(frame);
     playerShip->setDisplayFrame(frame);
     addChild(playerShip);
     
@@ -239,7 +247,23 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     // Set ship sprite and pos
     playerPos = ccp(winHeight * 0.5, winWidth * 0.1);
     playerShip->setPosition(playerPos);
+    b2BodyDef bd;
+    bd.type = b2_dynamicBody;
+    bd.position.Set((playerShip->getPosition().x)/PTM_RATIO,(playerShip->getPosition().y)/PTM_RATIO);
+    b2Body* body = world->CreateBody(&bd);
     
+    b2PolygonShape polygon;
+    polygon.SetAsBox(1.0, 0.1);
+    body->CreateFixture(&polygon, 10000.0f);
+    body->SetTransform(b2Vec2(playerShip->getPosition().x/PTM_RATIO,playerShip->getPosition().y/PTM_RATIO), 0.0f);
+    b2Vec2 enemyPos = b2Vec2(playerShip->getPosition().x,playerShip->getPosition().y);
+    b2Vec2 shipPos = b2Vec2(playerPos.x,playerPos.y);
+    b2Vec2 vel = enemyPos - shipPos;
+    vel.Normalize();
+    body->SetLinearVelocity(-5*vel);
+    playerShip->setPhysicsBody(body);
+    body->SetUserData(playerShip);
+        
     // Lasers
 #define KNUMLASERS 2
     _shipLasers = new CCArray();
@@ -318,50 +342,12 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     homing_missiles = new CCArray();
     _AIEnemies = new CCArray();
     
-    //Set up sprite
-#if 1
-    // Use batch node. Faster
-    CCSpriteBatchNode *parent = CCSpriteBatchNode::create("slice_4_4.png", 100);
-    m_pSpriteTexture = parent->getTexture();
-#else
-    // doesn't use batch node. Slower
-    m_pSpriteTexture = CCTextureCache::sharedTextureCache()->addImage("slice_4_4.png");
-    CCNode *parent = CCNode::create();
-#endif
-    addChild(parent, 0, kTagParentNode);
-    
-    /*for(int i = 0; i < KNUMENEMIES; i++) {
-        EnemySprite *enemy = new EnemySprite();
-        frame = frameCache->spriteFrameByName("slice_4_2.png");
-        enemy->initWithTexture(m_pSpriteTexture);
-        enemy->autorelease();
-        parent->addChild(enemy);
-        homing_missiles->addObject(enemy);
-        // Define the dynamic body.
-        //Set up a 1m squared box in the physics world
-        b2BodyDef bodyDef;
-        bodyDef.type = b2_dynamicBody;
-        bodyDef.position.Set(0.9*winHeight/PTM_RATIO,0.5*winWidth/PTM_RATIO);
-        
-        
-        b2Body *body = world->CreateBody(&bodyDef);
-        
-        // Define another box shape for our dynamic body.
-        b2PolygonShape dynamicBox;
-        dynamicBox.SetAsBox(.5f, .5f);//These are mid points for our 1m box
-        
-        // Define the dynamic body fixture.
-        b2FixtureDef fixtureDef;
-        fixtureDef.shape = &dynamicBox;
-        fixtureDef.density = 1.0f;
-        fixtureDef.friction = 0.3f;
-        body->CreateFixture(&fixtureDef);
-        //body->SetLinearVelocity(b2Vec2(-50.0f,0.0f));
-        
-        enemy->setPhysicsBody(body);
-    }
-    
-    */
+    _batchNode = CCSpriteBatchNode::create("missile_1_0 copy.png", 100);
+    _missleNode = CCSpriteBatchNode::create("missile.png", 100);
+    m_pSpriteTexture = _batchNode->getTexture();
+    missleTexture = _missleNode->getTexture();
+    addChild(_batchNode, 0, kTagParentNode);
+    addChild(_missleNode,0,kTagMissileNode);
     
     for(int i = 0; i < KNUMENEMIES; i++) {
         CCSprite *enemy = CCSprite::create("warrior1_0.png");
@@ -369,6 +355,7 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
         addChild(enemy);
         _AIEnemies->addObject(enemy);
     }
+    
     
 #define KNUMASTEROIDS 10
     _spawnQueue = new CCArray(KNUMASTEROIDS);
@@ -406,6 +393,7 @@ void SpacePhysicsLayer::onEnter()
     this->toneGenHelp->playBackgroundMusic("main_background.wav");
     this->toneGenHelp->enableTones();
     this->dataStoreHandler = ((SpacePhysicsScene *)this->getParent())->getDataStore();
+    this->searchHelper = new MLSearch();
     this->setTouchEnabled(true); // Enable Touch
     
     this->scheduleUpdate(); // Start updating
@@ -424,6 +412,10 @@ void SpacePhysicsLayer::onEnter()
     
     _nextAsteroid = 0;
     _curAsteroidCount = 0;
+    for (int i=0; i < 10; i++) {
+        baseVolumes[i] = 0.5;
+        volDiffs[i] = 0.0;
+    }
 }
 
 void SpacePhysicsLayer::initPhysics()
@@ -435,13 +427,13 @@ void SpacePhysicsLayer::initPhysics()
     gravity.Set(0.0f, 0.0f);
     world = new b2World(gravity);
     
-    //m_destructionListener.test = this;
-    //world->SetDestructionListener(&m_destructionListener);
-    //world->SetContactListener(this);
+    m_destructionListener.test = this;
+    world->SetDestructionListener(&m_destructionListener);
+    world->SetContactListener(this);
     
     // Do we want to let bodies sleep?
     world->SetAllowSleeping(true);
-    
+    world->SetWarmStarting(false);
     world->SetContinuousPhysics(true);
     m_debugDraw = new GLESDebugDraw( PTM_RATIO );
     world->SetDebugDraw(m_debugDraw);
@@ -459,21 +451,124 @@ void SpacePhysicsLayer::initPhysics()
 
 void SpacePhysicsLayer::update(float dt) {
     
-    float curTimeMillis = getTimeTick();
+    //float curTimeMillis = getTimeTick();
     
     CCSize winSize = CCDirector::sharedDirector()->getWinSize();
     
-    if (_health <= 0 && !gameOver) {
-        gameOver = true;
-        tutorialText = CCLabelTTF::create("GAME OVER!", "Audiowide-Regular", 30.0);
-        tutorialText->setPosition(ccp(winHeight/2, winWidth/2));
-        tutorialText->setVisible(true);
-        tutorialText->setOpacity(255);
-        addChild(tutorialText);
+    //////////////////////////////
+    //
+    //  Box2D
+    //
+    //////////////////////////////
+    
+    //It is recommended that a fixed time step is used with Box2D for stability
+    //of the simulation, however, we are using a variable time step here.
+    //You need to make an informed choice, the following URL is useful
+    //http://gafferongames.com/game-physics/fix-your-timestep/
+    
+    int velocityIterations = 8;
+    int positionIterations = 3;
+    
+    // Instruct the world to perform a single step of simulation. It is
+    // generally best to keep the time step and iterations fixed.
+    world->Step(dt, velocityIterations, positionIterations);
+    
+    // We are going to destroy some bodies according to contact
+    // points. We must buffer the bodies that should be destroyed
+    // because they may belong to multiple contact points.
+    const int32 k_maxNuke = 20;
+    b2Body* nuke[k_maxNuke];
+    int32 nukeCount = 0;
+    bool hitFlag = false;
+    
+    // Traverse the contact results. Destroy bodies that
+    // are touching heavier bodies.
+    for (int32 i = 0; i < m_pointCount; ++i)
+    {
+        ContactPoint* point = m_points + i;
         
-        runAction(CCWaves3D::create(5, 40, ccg(15,10), 10));
-        this->scheduleOnce(schedule_selector(SpacePhysicsLayer::menuCloseCallback), 8.0);
+        b2Body* body1 = point->fixtureA->GetBody();
+        b2Body* body2 = point->fixtureB->GetBody();
+        EnemySprite* sprite1 = (EnemySprite*) body1->GetUserData();
+        EnemySprite* sprite2 = (EnemySprite*) body2->GetUserData();
+        float32 mass1 = body1->GetMass();
+        float32 mass2 = body2->GetMass();
+        
+        
+        if (mass1 > 0.0f && mass2 > 0.0f && !hitFlag)
+        {
+            if (sprite1 == playerShip && sprite2->isVisible()) {
+                nuke[nukeCount++] = body2;
+                playerShip->runAction( CCBlink::create(1.0, 5));
+                _health -= 10;
+                hpBar->setPercentage(_health);
+                hitFlag = true;
+            }
+            else if (sprite2 == playerShip && sprite1->isVisible())
+            {
+                nuke[nukeCount++] = body1;
+                playerShip->runAction( CCBlink::create(1.0, 5));
+                _health -= 10;
+                hpBar->setPercentage(_health);
+                hitFlag = true;
+            }
+            else if (mass2 >= mass1)
+            {
+                nuke[nukeCount++] = body1;
+            }
+            else
+            {
+                nuke[nukeCount++] = body2;
+            }
+            
+            if (nukeCount == k_maxNuke)
+            {
+                break;
+            }
+        }
     }
+    
+    // Sort the nuke array to group duplicates.
+    std::sort(nuke, nuke + nukeCount);
+    
+    // Destroy the bodies, skipping duplicates.
+    int32 i = 0;
+    while (i < nukeCount)
+    {
+        b2Body* b = nuke[i++];
+        while (i < nukeCount && nuke[i] == b)
+        {
+            ++i;
+        }
+        if (b != NULL) {
+            b->SetActive(false);
+            EnemySprite* shotPtr = (EnemySprite*) b->GetUserData();
+            if (b != NULL) {
+                shotPtr->setVisible(false);
+            }
+            //removeChild(shotPtr,true);
+            //world->DestroyBody(b);
+            //b->SetUserData(NULL);
+            //nuke[i] = NULL;
+            //shotPtr->setPhysicsBody(NULL);
+        }
+    }
+    
+    //////////////////////////////
+    //
+    //  Accelerometer
+    //
+    //////////////////////////////
+    
+    float maxY = winSize.width - playerShip->getContentSize().width/2;
+    float minY = playerShip->getContentSize().width/2;
+    
+    float diff = (_shipPointsPerSecY * dt) ;
+    float newY = playerShip->getPosition().x + diff;
+    newY = MIN(MAX(newY, minY), maxY);
+    playerShip->setPosition(ccp(newY,playerShip->getPosition().y));
+    playerShip->getPhysicsBody()->SetTransform(b2Vec2(playerShip->getPosition().x/PTM_RATIO,playerShip->getPosition().y/PTM_RATIO), 0.0f);
+    
     
     //////////////////////////////
     //
@@ -629,7 +724,11 @@ void SpacePhysicsLayer::update(float dt) {
     CCARRAY_FOREACH( active_lanes,itLane) {
         CCSprite *lane = (CCSprite *) itLane;
         if (lane->isVisible() && lane->boundingBox().intersectsRect(playerShip->boundingBox())){
-            lane->setVisible(false);
+            CCObject *itLane2;
+            CCARRAY_FOREACH( active_lanes,itLane2) {
+                CCSprite *lane2 = (CCSprite *) itLane2;
+                lane2->setVisible(false);
+            }
             setEnemyInvisible(lane);
             //removeChild(active_lane, 1);
             toneGenHelp->removeTone(index);
@@ -639,26 +738,14 @@ void SpacePhysicsLayer::update(float dt) {
             _health -= 10.0;
             laneScale = 0.0;
             hpBar->setPercentage(_health);
-            float tmpVol = toneGenHelp->removeTone(index);
+            toneGenHelp->removeTone(index);
+            float tmpVol = toneGenHelp->getVolume();
+            volDiffs[index] = (float) searchHelper->getNextTone(volDiffs[index],earIndex,false);
             dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[index], (double) tmpVol, earIndex, 0,0,0);
             hitFlag = true;
         }
     }
-    
-    //////////////////////////////
-    //
-    //  Accelerometer
-    //
-    //////////////////////////////
-    
-    float maxY = winSize.width - playerShip->getContentSize().width/2;
-    float minY = playerShip->getContentSize().width/2;
-    
-    float diff = (_shipPointsPerSecY * dt) ;
-    float newY = playerShip->getPosition().x + diff;
-    newY = MIN(MAX(newY, minY), maxY);
-    playerShip->setPosition(ccp(newY,playerShip->getPosition().y));
-    
+        
     //////////////////////////////
     //
     //  Game Stats
@@ -685,73 +772,18 @@ void SpacePhysicsLayer::update(float dt) {
         //active_lane->setScaleY(laneScale);
     }
     
-    
-    // We are going to destroy some bodies according to contact
-    // points. We must buffer the bodies that should be destroyed
-    // because they may belong to multiple contact points.
-    const int32 k_maxNuke = 6;
-    b2Body* nuke[k_maxNuke];
-    int32 nukeCount = 0;
-    
-    // Traverse the contact results. Destroy bodies that
-    // are touching heavier bodies.
-    for (int32 i = 0; i < m_pointCount; ++i)
-    {
-        ContactPoint* point = m_points + i;
+    if (_health <= 0 && !gameOver) {
+        gameOver = true;
+        tutorialText = CCLabelTTF::create("GAME OVER!", "Audiowide-Regular", 30.0);
+        tutorialText->setPosition(ccp(winHeight/2, winWidth/2));
+        tutorialText->setVisible(true);
+        tutorialText->setOpacity(255);
+        addChild(tutorialText);
         
-        b2Body* body1 = point->fixtureA->GetBody();
-        b2Body* body2 = point->fixtureB->GetBody();
-        float32 mass1 = body1->GetMass();
-        float32 mass2 = body2->GetMass();
-        
-        if (mass1 > 0.0f && mass2 > 0.0f)
-        {
-            if (mass2 > mass1)
-            {
-                nuke[nukeCount++] = body1;
-            }
-            else
-            {
-                nuke[nukeCount++] = body2;
-            }
-            
-            if (nukeCount == k_maxNuke)
-            {
-                break;
-            }
-        }
+        runAction(CCWaves3D::create(5, 40, ccg(15,10), 10));
+        this->scheduleOnce(schedule_selector(SpacePhysicsLayer::menuCloseCallback), 8.0);
     }
     
-    // Sort the nuke array to group duplicates.
-    std::sort(nuke, nuke + nukeCount);
-    
-    // Destroy the bodies, skipping duplicates.
-    int32 i = 0;
-    while (i < nukeCount)
-    {
-        b2Body* b = nuke[i++];
-        while (i < nukeCount && nuke[i] == b)
-        {
-            ++i;
-        }
-        
-        if (b != m_bomb)
-        {
-            world->DestroyBody(b);
-        }
-    }
-    
-    //It is recommended that a fixed time step is used with Box2D for stability
-    //of the simulation, however, we are using a variable time step here.
-    //You need to make an informed choice, the following URL is useful
-    //http://gafferongames.com/game-physics/fix-your-timestep/
-    
-    int velocityIterations = 1;
-    int positionIterations = 1;
-    
-    // Instruct the world to perform a single step of simulation. It is
-    // generally best to keep the time step and iterations fixed.
-    world->Step(dt, velocityIterations, positionIterations);
 }
 
 void SpacePhysicsLayer::draw(){
@@ -762,10 +794,8 @@ void SpacePhysicsLayer::draw(){
     
     glLineWidth(2);
     
-    for (int i = 0; i < 10; i++) {
-        ccColor4F color = ccc4f((float)((i)%5),(float)((i+1)%5),(float)((i+3)%5),0.2);
-        ccDrawSolidRect(ccp(i*winHeight/10,0), ccp((i+1)*winHeight/10,winWidth), color);
-    }
+    ccDrawSolidRect(ccp(0,0), ccp(winHeight/2,winWidth), ccc4f(0,1,0,0.1));
+    ccDrawSolidRect( ccp(winHeight/2,0), ccp(winHeight,winWidth), ccc4f(0,0,1,0.1));
     
     CCLayer::draw();
     
@@ -814,16 +844,6 @@ void SpacePhysicsLayer::playTutorial()
     tutorialText2->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
     tutorialText2->runAction(CCSequence::create(CCDelayTime::create(10.0),fadeOut,NULL));
     initialDelay->setDuration(10.5);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn1_L), 15.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn2_L), 16.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn3_L), 17.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn4_L), 18.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn5_L), 19.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn1_R), 20.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn2_R), 21.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn3_R), 22.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn4_R), 23.0f);
-    this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawn5_R), 24.0f);
     tutorialText3->runAction(CCSequence::create (initialDelay,fadeIn,NULL));
     tutorialText3->runAction(CCSequence::create(CCDelayTime::create(14.5),fadeOut,NULL));
     initialDelay->setDuration(30.0);
@@ -838,17 +858,7 @@ void SpacePhysicsLayer::endTutorial()
     removeChild(tutorialSkipButton, true);
     distLabel->setVisible(true);
     scoreLabel->setVisible(true);
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn1_L));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn2_L));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn3_L));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn4_L));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn5_L));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn1_R));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn2_R));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn3_R));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn4_R));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::spawn5_R));
-    this->unschedule(schedule_selector(SpacePhysicsLayer::endTutorial));
+
     tutorialText->stopAllActions();
     tutorialText2->stopAllActions();
     tutorialText3->stopAllActions();
@@ -862,81 +872,9 @@ void SpacePhysicsLayer::endTutorial()
     
 }
 
-void SpacePhysicsLayer::moveEnemy() {
-    
-    
-    // Init enemy
-    CCSprite *enemy = (CCSprite *) homing_missiles->objectAtIndex(0);
-    enemy->setOpacity(255);
-    enemy->stopAllActions();
-    
-    float visibleDelay = (ccpDistance(playerShip->getPosition(), enemy->getPosition()) - radarRadius)/enemyVelocity;
-    
-    // Animation seq
-    CCAnimation *normal = animCache->animationByName("enemy");
-    normal->setRestoreOriginalFrame(true);
-    CCAnimate *animN = CCAnimate::create(normal);
-    CCRepeatForever *seq = CCRepeatForever::create(animN);
-    
-    // Time appearance
-    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay);
-    CCFadeIn *fade = CCFadeIn::create(0.01);
-    CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
-    
-    double randDuration = ccpDistance(playerShip->getPosition(), enemy->getPosition())/enemyVelocity;
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL);
-    
-    enemy->runAction(moveSeq);
-    enemy->setRotation(-45.0 + (enemyIndex/10.0)*90.0f);
-    enemy->runAction(seq);
-    enemy->runAction(fadeAnim);
-    enemy->setVisible(true);
-}
-
-void SpacePhysicsLayer::spawnEnemy()
-{
-    spawnEnemyAtLoc(enemyIndex,earIndex);
-}
-
 void SpacePhysicsLayer::tutorialSpawn(int freqIndex, int earIndex)
 {
     
-    double randDuration = winWidth/enemyVelocity;   // Total travel duration
-    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
-    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
-    
-    float tmp = TWOPI / 40.0;
-    EnemySprite *enemy = (EnemySprite *) homing_missiles->objectAtIndex(0);  // Grab enemy object
-    enemy->stopAllActions();
-    enemy->setOpacity(255);
-    enemy->setVisible(true);
-    if (earIndex) {
-        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth/2 * cos(tmp*(freqIndex + 4)), winWidth/2 * sin(tmp*(freqIndex + 4)))));
-        enemy->setRotation(45.0f - (freqIndex/10.0)*90.0f);
-    } else {
-        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth/2 * cos(tmp*(freqIndex + 4)), winWidth/2 * sin(tmp*(freqIndex + 4)))));
-        enemy->setRotation(-45.0f + (freqIndex/10.0)*90.0f);
-    }
-    sineTones[_nextAsteroid] = randFrequency;
-    timeTargets[_nextAsteroid] = randDuration;
-    //toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
-    toneGenHelp->maxToneVolume();
-    
-    CCAnimation *normal = animCache->animationByName("enemy"); // Animation
-    normal->setRestoreOriginalFrame(true);
-    CCAnimate *animN = CCAnimate::create(normal);
-    CCRepeatForever *seq = CCRepeatForever::create(animN);
-    
-    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay); // Invisibilty timer
-    CCFadeIn *fade = CCFadeIn::create(0.01);
-    CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
-    
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL); // Movement Action
-    
-    // Run All Actions
-    enemy->runAction (moveSeq);
-    enemy->runAction(seq);
-    enemy->runAction(fadeAnim);
     
 }
 
@@ -951,128 +889,31 @@ void SpacePhysicsLayer::spawnRandomEnemy()
     
 }
 
-void SpacePhysicsLayer::spawn1_L()
+void SpacePhysicsLayer::spawnHomingMissle()
 {
-    spawnEnemyAtLoc(1,0);
-}
-void SpacePhysicsLayer::spawn2_L()
-{
-    spawnEnemyAtLoc(2,0);
-}
-void SpacePhysicsLayer::spawn3_L()
-{
-    spawnEnemyAtLoc(3,0);
-}
-void SpacePhysicsLayer::spawn4_L()
-{
-    spawnEnemyAtLoc(4,0);
-}
-void SpacePhysicsLayer::spawn5_L()
-{
-    spawnEnemyAtLoc(5,0);
-}
-void SpacePhysicsLayer::spawn1_R()
-{
-    spawnEnemyAtLoc(1,1);
-}
-void SpacePhysicsLayer::spawn2_R()
-{
-    spawnEnemyAtLoc(2,1);
-}
-void SpacePhysicsLayer::spawn3_R()
-{
-    spawnEnemyAtLoc(3,1);
-}
-void SpacePhysicsLayer::spawn4_R()
-{
-    spawnEnemyAtLoc(4,1);
-}
-void SpacePhysicsLayer::spawn5_R()
-{
-    spawnEnemyAtLoc(5,1);
-}
-
-void SpacePhysicsLayer::spawnLowFreqEnemy()
-{
-    spawnEnemyAtLoc(1,0);
-}
-
-void SpacePhysicsLayer::spawnHighFreqEnemy()
-{
-    spawnEnemyAtLoc(5,1);
-}
-
-void SpacePhysicsLayer::spawnEnemyAtLoc(int freqIndex, int earIndex)
-{
-    double randDuration = winWidth/enemyVelocity;   // Total travel duration
-    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
-    float visibleDelay = (winWidth - radarRadius)/enemyVelocity;
+    CCSprite *aiEnemy = (CCSprite *) _AIEnemies->objectAtIndex(0);
+    EnemySprite *enemy = new EnemySprite();
+    enemy->initWithTexture(missleTexture);
+    b2BodyDef bd;
+    bd.type = b2_dynamicBody;
+    bd.position.Set((aiEnemy->getPosition().x)/PTM_RATIO,(aiEnemy->getPosition().y)/PTM_RATIO);
+    b2Body* body = world->CreateBody(&bd);
     
-    float tmp = TWOPI / 40.0;
-    EnemySprite *enemy = (EnemySprite *) homing_missiles->objectAtIndex(0);  // Grab enemy object
-    //enemy->initWithTexture(m_pSpriteTexture);
-    //enemy->autorelease();
-    enemy->stopAllActions();
-    enemy->setOpacity(255);
-    enemy->setVisible(true);
-    
-    //b2BodyDef bodyDef;
-    //bodyDef.type = b2_dynamicBody;
-    if (earIndex) {
-        //bodyDef.position.Set((winHeight * 0.5+winWidth * cos(tmp*(freqIndex + 4)))/PTM_RATIO,(winWidth * 0.1 + winWidth * sin(tmp*(freqIndex + 4)))/PTM_RATIO);
-        enemy->getPhysicsBody()->SetTransform(b2Vec2((winHeight * 0.5+winWidth * cos(tmp*(freqIndex + 4)))/PTM_RATIO,(winWidth * 0.1 + winWidth * sin(tmp*(freqIndex + 4)))/PTM_RATIO), 0.0);
-        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(winWidth * cos(tmp*(freqIndex + 4)), winWidth * sin(tmp*(freqIndex + 4)))));
-        enemy->setRotation(45.0f - (freqIndex/10.0)*90.0f);
-    } else {
-        //bodyDef.position.Set((winHeight * 0.5-winWidth * cos(tmp*(freqIndex + 4)))/PTM_RATIO,(winWidth * 0.1 + winWidth * sin(tmp*(freqIndex + 4)))/PTM_RATIO);
-        enemy->getPhysicsBody()->SetTransform(b2Vec2((winHeight * 0.5-winWidth * cos(tmp*(freqIndex + 4)))/PTM_RATIO,(winWidth * 0.1 + winWidth * sin(tmp*(freqIndex + 4)))/PTM_RATIO), 0.0);
-        enemy->setPosition(ccpAdd(ccp(winHeight * 0.5, winWidth * 0.1),ccp(-winWidth * cos(tmp*(freqIndex + 4)), winWidth * sin(tmp*(freqIndex + 4)))));
-        enemy->setRotation(-45.0 + (freqIndex/10.0)*90.0f);
-    }
-    sineTones[_nextAsteroid] = randFrequency;
-    timeTargets[_nextAsteroid] = randDuration;
-    //toneGenHelp->addTone(randFrequency, visibleDelay, earIndex);   // Play pure-tone
-    
-    //CCAnimation *normal = animCache->animationByName("enemy"); // Animation
-    //normal->setRestoreOriginalFrame(true);
-    //CCAnimate *animN = CCAnimate::create(normal);
-    //CCRepeatForever *seq = CCRepeatForever::create(animN);
-    /*
-    CCDelayTime *fadeDelay = CCDelayTime::create(visibleDelay); // Invisibilty timer
-    CCFadeIn *fade = CCFadeIn::create(0.01);
-    CCFiniteTimeAction *fadeAnim = CCSequence::create(fadeDelay,fade,NULL);
-    
-    CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,playerShip->getPosition()),NULL); // Movement Action
-    */
-    
-    //b2Body *body = world->CreateBody(&bodyDef);
-    
-    // Define another box shape for our dynamic body.
-    //b2PolygonShape dynamicBox;
-    //dynamicBox.SetAsBox(.5f, .5f);//These are mid points for our 1m box
-    
-    // Define the dynamic body fixture.
-    //b2FixtureDef fixtureDef;
-    //fixtureDef.shape = &dynamicBox;
-    //fixtureDef.density = 1.0f;
-    //fixtureDef.friction = 0.3f;
-    //body->CreateFixture(&fixtureDef);
-    //body->SetLinearVelocity(b2Vec2(-50.0f,0.0f));
-    //body->SetTransform(b2Vec2(winHeight/2,winWidth/2), 0.0);
-    
-    b2Vec2 enemyPos = b2Vec2(enemy->getPosition().x,enemy->getPosition().y);
+    b2PolygonShape polygon;
+    polygon.SetAsBox(1.0, 0.1);
+    body->CreateFixture(&polygon, 1.0f);
+    body->SetTransform(b2Vec2(aiEnemy->getPosition().x/PTM_RATIO,aiEnemy->getPosition().y/PTM_RATIO), -90.0);
+    b2Vec2 enemyPos = b2Vec2(aiEnemy->getPosition().x,aiEnemy->getPosition().y);
     b2Vec2 shipPos = b2Vec2(playerPos.x,playerPos.y);
-    b2Vec2 velocity = enemyPos - shipPos;
-    velocity.Normalize();
-    b2Body *body = enemy->getPhysicsBody();
-    body->SetLinearVelocity(-1*velocity);
+    b2Vec2 vel = enemyPos - shipPos;
+    vel.Normalize();
+    body->SetLinearVelocity(-5*vel);
     enemy->setPhysicsBody(body);
+
+    addChild(enemy);
+    body->SetUserData(enemy);
     
-    // Run All Actions
-    //enemy->runAction (moveSeq);
-    //enemy->runAction(seq);
-    //enemy->runAction(fadeAnim);
-    //parent->addChild(enemy);
+
 }
 
 void SpacePhysicsLayer::spawnAIEnemy()
@@ -1084,7 +925,7 @@ void SpacePhysicsLayer::spawnAIEnemy()
     aiEnemy->setRotation(90.0f);
     aiEnemy->setScale(0.5);
     
-    aiEnemy->setPosition(ccp(winHeight/2,winWidth/2));
+    aiEnemy->setPosition(ccp(winHeight/2,winWidth*0.75));
     
     CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(10.0,ccp(0,winWidth*0.75)),CCMoveTo::create(10.0,ccp(winHeight,winWidth*0.75)),NULL);
     
@@ -1092,19 +933,16 @@ void SpacePhysicsLayer::spawnAIEnemy()
     aiEnemy->runAction(moveLoop);
     
     this->schedule(schedule_selector(SpacePhysicsLayer::spawnAttackPatterns), 2.0f);
+    this->schedule(schedule_selector(SpacePhysicsLayer::spawnHomingMissle), 3.0f);
+
 }
 
 void SpacePhysicsLayer::spawnAttackPatterns()
 {
     CCSprite *aiEnemy = (CCSprite *) _AIEnemies->objectAtIndex(0);
     
-    CCSpriteBatchNode *parent = CCSpriteBatchNode::create("missile_1_0 copy.png", 100);
-    m_pSpriteTexture = parent->getTexture();
-    
-    addChild(parent, 0, kTagParentNode);
-    
-    float degRot = 0.0;
-    for (int i = 0; i < 10; i++) {
+    float degRot = 180.0;
+    for (int i = 0; i < 5; i++) {
         
         EnemySprite *shot = new EnemySprite();
         shot->initWithTexture(m_pSpriteTexture);
@@ -1115,16 +953,18 @@ void SpacePhysicsLayer::spawnAttackPatterns()
         bd.position.Set((aiEnemy->getPosition().x + 50*cos(degRot))/PTM_RATIO,(aiEnemy->getPosition().y + 50*sin(degRot))/PTM_RATIO);
         b2Body* body = world->CreateBody(&bd);
         
-        b2PolygonShape shape;
-        shape.SetAsBox(0.125f, 0.125f);
-        body->CreateFixture(&shape, 1.0f);
+        b2CircleShape circle;
+        circle.m_radius = 0.1f;
+        body->CreateFixture(&circle, 1.0f);
         vel = b2Vec2(cos(degRot),sin(degRot));
         vel.Normalize();
         body->SetLinearVelocity(vel);
-        degRot += 30.0;
+        degRot += 18.0;
         shot->setPhysicsBody(body);
         shot->setVisible(true);
         addChild(shot);
+        body->SetUserData(shot);
+        
     }
 }
 
@@ -1132,16 +972,14 @@ void SpacePhysicsLayer::spawnTones(int freqIndex, int earIndex)
 {
     double randDuration = randomValueBetweenD(2.0,5.0);
     float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
-
     
-    toneGenHelp->playDecreasingTone(randFrequency, randDuration, earIndex);   // Play pure-tone
-    toneGenHelp->maxToneVolume();
+    searchHelper->cur_freq = freqIndex;
+    toneGenHelp->setVolume(baseVolumes[freqIndex] + volDiffs[freqIndex]/10.0);
+    toneGenHelp->playConstantTone(randFrequency, baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex);   // Play pure-tone
     this->earIndex = earIndex;
     
     this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnBeam),randDuration);
     this->scheduleOnce(schedule_selector(SpacePhysicsLayer::deSpawnBeam),randDuration + 2.0);
-    //CCProgressTo *to2 = CCProgressTo::create(2, 100);
-    //active_lane->runAction(to2);
 }
 
 void SpacePhysicsLayer::spawnBeam()
@@ -1152,12 +990,13 @@ void SpacePhysicsLayer::spawnBeam()
         CCSprite *lane = (CCSprite *) laneObj;
         lane->setVisible(true);
         if (earIndex)
-            lane->setPosition(ccp((10 - index)*(winHeight/10) - winHeight/20,winWidth/2));
+            lane->setPosition(ccp((10 - index)*(winHeight/10),winWidth/2));
         else
-            lane->setPosition(ccp(index*(winHeight/10) - winHeight/20,winWidth/2));
+            lane->setPosition(ccp(index*(winHeight/10),winWidth/2));
         index++;
     }
     enemySpawned = false;
+    hitFlag = false;
 }
 
 void SpacePhysicsLayer::deSpawnBeam()
@@ -1168,9 +1007,12 @@ void SpacePhysicsLayer::deSpawnBeam()
         lane->setVisible(false);
     }
     enemySpawned = false;
-    float tmpVol = toneGenHelp->removeTone(0);
-    if (!hitFlag)
+    toneGenHelp->removeTone(0);
+    float tmpVol = toneGenHelp->getVolume();
+    if (!hitFlag) {
+        volDiffs[enemyIndex] = searchHelper->getNextTone(volDiffs[enemyIndex],earIndex, true);
         dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[0], (double) tmpVol, earIndex, 1,0,0);
+    }
 }
 
 void SpacePhysicsLayer::spawnAsteroid()
@@ -1265,6 +1107,8 @@ void SpacePhysicsLayer::ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent
     float shot_angle = atan2f(mean_touch.y - pos.y,mean_touch.x - pos.x);
     
     pos.setPoint(pos.x - 15, pos.y);
+    b2Body * bd = playerShip->getPhysicsBody();
+    bd->SetTransform(b2Vec2(pos.x/PTM_RATIO,pos.y/PTM_RATIO), shot_angle * (-180/3.14159) + 90.0f);
     playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
 }
 
@@ -1289,6 +1133,9 @@ void SpacePhysicsLayer::ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent
     CCSize winSize = CCDirector::sharedDirector()->getWinSize() ;
     CCSprite *shipLaser = (CCSprite *) _shipLasers->objectAtIndex(_nextShipLaser++);
     shipLaser->setRotation(shot_angle * (-180/3.14159));
+    playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
+    b2Body * bd = playerShip->getPhysicsBody();
+    bd->SetTransform(b2Vec2(pos.x/PTM_RATIO,pos.y/PTM_RATIO), shot_angle * (-180/3.14159) + 90.0f);
     playerShip->setRotation(shot_angle * (-180/3.14159) + 90.0f);
     if ( _nextShipLaser >= _shipLasers->count() )
         _nextShipLaser = 0;
@@ -1501,7 +1348,7 @@ void SpacePhysicsScene::MainMenuCallback(CCObject* pSender)
 
 void SpacePhysicsScene::pauseMenuCallback(CCObject* pSender)
 {
-    CCLayer* pauseLayer = new PauseSceneLayer();
+    CCLayer* pauseLayer = new PauseSceneLayer2();
     addChild(pauseLayer);
     ((CCMenuItem *)pSender)->setEnabled(false);
     RecursivelyPauseAllChildren((CCNode *)this->getChildren()->objectAtIndex(0));
@@ -1532,6 +1379,127 @@ void SpacePhysicsScene::RecursivelyResumeAllChildren( CCNode * node ) {
 void DestructionListener::SayGoodbye(b2Joint* joint)
 {
     test->JointDestroyed(joint);
+}
+
+PauseSceneLayer2::PauseSceneLayer2()
+{
+    // Label Item (CCLabelBMFont)
+    CCMenuItemFont* item1 = CCMenuItemFont::create("Resume", this, menu_selector(PauseSceneLayer2::resumeCallback));
+    
+    
+    CCMenuItemFont::setFontName("PressStart2P-Regular");
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont*title2 = CCMenuItemFont::create("Effects");
+    title2->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle* item2 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer2::fxCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
+    CCMenuItemFont::setFontSize(16);
+    CCMenuItemFont* title3 = CCMenuItemFont::create( "Music" );
+    title3->setEnabled(false);
+    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
+    CCMenuItemFont::setFontSize(34);
+    CCMenuItemToggle *item3 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer2::musicCallback),
+                                                                 CCMenuItemFont::create( "On" ),
+                                                                 CCMenuItemFont::create( "Off"),
+                                                                 NULL );
+    
+    
+    CCMenuItemFont* item4 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer2::MainMenuCallback));
+    CCMenu* menu = CCMenu::create( item1, title2, item2, title3, item3, item4, NULL);
+    menu->alignItemsInColumns(1,2,2,1,NULL);
+    
+    // elastic effect
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    int i=0;
+    CCNode* child;
+    CCArray * pArray = menu->getChildren();
+    CCObject* pObject = NULL;
+    CCARRAY_FOREACH(pArray, pObject)
+    {
+        if(pObject == NULL)
+            break;
+        
+        child = (CCNode*)pObject;
+        
+        CCPoint dstPoint = child->getPosition();
+        int offset = (int) (s.width/2 + 50);
+        
+        child->setPosition( CCPointMake( dstPoint.x + offset, dstPoint.y) );
+        child->runAction(CCEaseElasticOut::create(CCMoveBy::create(2, CCPointMake(dstPoint.x - offset,0)), 0.35f));
+        i++;
+    }
+    addChild(menu);
+    menu->setPosition(ccp(s.width/2, s.height/2));
+}
+
+PauseSceneLayer2::~PauseSceneLayer2()
+{
+    
+}
+
+void PauseSceneLayer2::resumeCallback(CCObject* pSender)
+{
+    ((SpaceScene *)(this->getParent()))->RecursivelyResumeAllChildren(this->getParent());
+    ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableTones();
+    ((SpaceScene *)(this->getParent()))->pauseButton->setEnabled(true);
+    this->removeFromParentAndCleanup(true);
+}
+
+void PauseSceneLayer2::MainMenuCallback(CCObject* pSender)
+{
+    SpaceScene *parent = (SpaceScene *)this->getParent();
+    
+    //parent->sendData();
+    
+    CCScene* pScene = MainMenu::create();
+    CCLayer* pLayer1 = new MainMenuLayer();
+    CCLayer* pLayer2 = new OptionsLayer();
+    CCLayer* pLayer3 = new AudiogramSceneLayer();
+    CCLayer* pLayer4 = new CreditsLayer();
+    CCLayer* pLayer5 = new LevelLayer();
+    
+    
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
+    pScene->addChild(layer, 0);
+    
+    ((MainMenu *)(pScene))->rootVC = parent->rootVC;
+    
+    pLayer1->release();
+    pLayer2->release();
+    pLayer3->release();
+    pLayer4->release();
+    pLayer5->release();
+    
+    ((MainMenu *) pScene)->setToneGenerator(parent->getToneGenerator());
+    ((MainMenu *) pScene)->setDataStore(parent->getDataStore());
+    CCDirector::sharedDirector()->replaceScene(pScene);
+}
+
+void PauseSceneLayer2::musicCallback(CCObject *sender)
+{
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->disableBackground();
+    } else {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableBackground();
+    }
+}
+
+void PauseSceneLayer2::fxCallback(CCObject *sender)
+{
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->disableTones();
+    } else {
+        ((SpaceScene *)(this->getParent()))->getToneGenerator()->enableTones();
+    }
 }
 
 

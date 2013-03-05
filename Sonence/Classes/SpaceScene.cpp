@@ -1046,7 +1046,6 @@ void SpaceSceneLayer::nextLevel()
     level++;
 }
 
-
 PauseSceneLayer::PauseSceneLayer()
 {
     // Label Item (CCLabelBMFont)

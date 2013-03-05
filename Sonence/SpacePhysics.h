@@ -35,6 +35,7 @@ public:
     b2Body* getPhysicsBody();
     virtual bool isDirty(void);
     virtual cocos2d::CCAffineTransform nodeToParentTransform(void);
+    static CCSprite * create(const char *pszFileName);
 private:
     b2Body* m_pBody;    // strong ref
 };
@@ -108,7 +109,7 @@ public:
     void spawnBeam();
     void deSpawnBeam();
     void moveEnemy();
-    void spawnEnemyAtLoc(int freqIndex, int earIndex);
+    void spawnHomingMissle();
     void spawnLowFreqEnemy();
     void spawnHighFreqEnemy();
     void spawnAsteroid();
@@ -142,6 +143,8 @@ public:
 private:
     // Game Resources - Sprites
     cocos2d::CCSpriteBatchNode * _batchNode; // Background stuff
+    cocos2d::CCSpriteBatchNode * _missleNode;
+
     CCParallaxNodeExtras *_backgroundNode;
     CCSprite *_spacedust1;
     CCSprite *_spacedust2;
@@ -153,6 +156,7 @@ private:
     CCSprite *healthBar;
     CCProgressTimer *hpBar;
     CCTexture2D* m_pSpriteTexture;
+    CCTexture2D* missleTexture;
     
     
     // Text Labels
@@ -166,7 +170,7 @@ private:
     CCMenu* tutorialSkipButton;
     
     // NPC Sprites
-    CCSprite *playerShip;
+    EnemySprite *playerShip;
     CCSprite *boss;
     
     CCArray *active_lanes;
@@ -214,6 +218,8 @@ private:
     float radarRadius;
     float enemyVelocity;
     float seed_freq;
+    float baseVolumes[10];
+    float volDiffs[10];
     float tutorialDuration;
     float initTime;
     float touchTime;
@@ -263,6 +269,19 @@ private:
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
     iOSBridge::DataStore *dataStoreHandler;
     rapidjson::Document jsonDoc;
+    
+};
+
+class PauseSceneLayer2 : public CCLayer
+{
+public:
+    PauseSceneLayer2();
+    ~PauseSceneLayer2();
+    
+    virtual void resumeCallback(CCObject* pSender);
+    virtual void MainMenuCallback(CCObject* pSender);
+    void musicCallback(CCObject *sender);
+    void fxCallback(CCObject *sender);
     
 };
 

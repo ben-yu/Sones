@@ -60,6 +60,9 @@ struct AudioData{
 - (void) AddTone:(int) frequency
        timeConst:(double) duration
          toneNum:(int) index;
+- (void) playConstantTone:(int) frequency
+                   volume:(double) level
+                  toneNum:(int) index;
 - (void) playOscillatingTone:(int) frequency
                    timeConst:(double) duration
                      toneNum:(int) index;
@@ -73,6 +76,7 @@ struct AudioData{
 - (void) playExplosion;
 - (NSNumber *) getAmplitude;
 - (Float32) getVolume;
+- (void) setVolume:(float) level;
 - (void) oscillateBackground;
 
 @end

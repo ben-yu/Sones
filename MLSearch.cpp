@@ -20,6 +20,17 @@ MLSearch::MLSearch()
     {
         gammaValues[i] = i * 0.1f;
     }
+    
+    for (int channel = 0; channel < numOfChannels; channel++) {
+        for (int freq = 0; freq < numOfFrequencies; freq++) {
+            for (int i=0; i < numOfAlphas; i++) {
+                for (int j=0; j < numOfGammas; j++)
+                {
+                    this->probTable[channel][freq][i][j] = 1.0;
+                }
+            }
+        }
+    }
 
 }
 
@@ -33,17 +44,21 @@ double MLSearch::invLogistic(double p_target, double alpha, double beta, double 
     return alpha-(1/beta)*log(((1-lambda-gamma)/(p_target-gamma))-1);
 }
 
-double MLSearch::findThreshold(double p_target, double x, double alpha, double beta, double gamma, double lambda)
+double MLSearch::getNextTone(double x, int channel, bool hit)
 {
     double max = 0;
-    int max_i, max_j;
+    int max_i, max_j = 0;
     // Fill probability table & find max
     for (int i=0; i < numOfAlphas; i++) {
         for (int j=0; j < numOfGammas; j++)
         {
-            this->probTable[i][j] += log(logistic(x,alphaValues[i],beta,gammaValues[j],lambda));
-            if (probTable[i][j] > max) {
-                max = probTable[i][j];
+            if (hit)
+                this->probTable[channel][cur_freq][i][j] *= logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
+            else
+                this->probTable[channel][cur_freq][i][j] *= 1.0 - logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
+            
+            if (probTable[channel][cur_freq][i][j] > max) {
+                max = probTable[channel][cur_freq][i][j];
                 max_i = i;
                 max_j = j;
             }
@@ -51,6 +66,6 @@ double MLSearch::findThreshold(double p_target, double x, double alpha, double b
     }
 
     // Calculate new level
-    return invLogistic(0.0, alphaValues[max_i], beta, gammaValues[max_j], lambda);
+    return invLogistic(0.6, alphaValues[max_i], beta, gammaValues[max_j], lambda); // Sweetspot of 0.6 TP rate
     
 }

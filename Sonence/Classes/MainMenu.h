@@ -50,6 +50,7 @@ public:
     void startGameCallback(CCObject* sender);
     void startAccelCallback(CCObject* sender);
     void startCannonCallback(CCObject* pSender);
+    void startCountingCallback(CCObject* pSender);
 
     
     

@@ -21,6 +21,7 @@ class  ToneGeneratorHelper {
         void ShowAlert();
         void playRandomTone();
         void addTone(float frequency, double duration, int index);
+        void playConstantTone(float frequency, double duration, int index);
         void playOscillatingTone(float frequency, double duration, int index);
         void playDecreasingTone(float frequency, double duration, int index);
         float removeTone(int index);
@@ -35,7 +36,9 @@ class  ToneGeneratorHelper {
         void playExplosion();
         float getAmplitude();
         float getVolume();
+        void setVolume(float level);
         void oscillateBackground();
+    
 
     
     private:

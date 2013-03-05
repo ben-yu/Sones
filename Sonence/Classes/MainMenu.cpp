@@ -10,6 +10,7 @@
 #include "SpaceScene.h"
 #include "SpacePhysics.h"
 #include "Catapult.h"
+#include "CountingGame.h"
 
 #define TRANSITION_DURATION (1.2f)
 
@@ -129,10 +130,14 @@ LevelLayer::LevelLayer()
     CCMenuItemImage *item1 = CCMenuItemImage::create("target-dummy.png", "target-dummy-pressed.png", this, menu_selector(LevelLayer::startGameCallback));
     CCMenuItemImage *item2 = CCMenuItemImage::create("alien-skull.png", "alien-skull-pressed.png", this, menu_selector(LevelLayer::startAccelCallback));
     CCMenuItemImage *item3 = CCMenuItemImage::create("cannon.png", "anthem.png", this, menu_selector(LevelLayer::startCannonCallback));
+    CCMenuItemImage *item4 = CCMenuItemImage::create("coma.png", "anthem.png", this, menu_selector(LevelLayer::startCountingCallback));
+
     
     item1->setScale(0.05 * s.width/640);
     item2->setScale(0.05 * s.width/640);
     item3->setScale(0.05 * s.width/640);
+    item4->setScale(0.05 * s.width/640);
+
     
     //item2->setEnabled(false);
     //item3->setEnabled(false);
@@ -141,23 +146,29 @@ LevelLayer::LevelLayer()
     CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(CreditsLayer::backCallback) );
     back->setPosition(ccp(s.width*0.8,s.height*0.2));
     
-    CCMenu *menu = CCMenu::create(item1, item2, item3, back, NULL);
+    CCMenu *menu = CCMenu::create(item1, item2, item3, item4, back, NULL);
     
     menu->setPosition(CCPointZero);
     item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.05*item2->getContentSize().width*2));
     item2->setPosition(CCPointMake(s.width/4, s.height/2));
     item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.05*item2->getContentSize().width*2));
+    item4->setPosition(CCPointMake(s.width/4, s.height/2 + 0.1*item2->getContentSize().width*2));
+
     
     CCLabelTTF *item1Label = CCLabelTTF::create("Target Practice", "PressStart2P-Regular", 12.0);
     CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders", "PressStart2P-Regular", 12.0);
     CCLabelTTF *item3Label = CCLabelTTF::create("Cannon Launch", "PressStart2P-Regular", 12.0);
+    CCLabelTTF *item4Label = CCLabelTTF::create("Counting Game", "PressStart2P-Regular", 12.0);
+
     
     item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.05*item2->getContentSize().width*2));
     item2Label->setPosition(CCPointMake(s.width/2, s.height/2));
     item3Label->setPosition(CCPointMake(s.width/2, s.height/2 - 0.05*item2->getContentSize().width*2));
+    item4Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.1*item2->getContentSize().width*2));
+
     
     addChild(menu, 1);
-    addChild(item1Label);addChild(item2Label);addChild(item3Label);
+    addChild(item1Label);addChild(item2Label);addChild(item3Label);addChild(item4Label);
 }
 
 void LevelLayer::startGameCallback(CCObject* pSender)
@@ -215,8 +226,30 @@ void LevelLayer::startCannonCallback(CCObject* pSender)
     }
     pScene->toneGenHelp->playBackgroundMusic("main_background.wav");
     pScene->toneGenHelp->enableTones();
-    pScene->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
+    pScene->toneGenHelp->playOscillatingTone(1000.0, 1.0, 2);
     pScene->toneGenHelp->oscillateBackground();
+}
+
+void LevelLayer::startCountingCallback(CCObject* pSender)
+{
+    CountingGame* pScene =  new CountingGame();
+    // fix bug #486, without setDepthTest(false), FlipX,Y will flickers
+    CCDirector::sharedDirector()->setDepthTest(false);
+    CCScene* tranScene = CCTransitionZoomFlipX::create(TRANSITION_DURATION, pScene);
+    
+    pScene->setToneGenerator(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
+    pScene->setDataStore(((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore());
+    if (pScene)
+    {
+        pScene->gameMode = 1;
+        pScene->runGame();
+        CCDirector::sharedDirector()->replaceScene(tranScene);
+        pScene->release();
+    }
+    pScene->toneGenHelp->playBackgroundMusic("main_background.wav");
+    pScene->toneGenHelp->enableTones();
+    //pScene->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
+    //pScene->toneGenHelp->oscillateBackground();
 }
 
 void LevelLayer::backCallback(CCObject* sender)
