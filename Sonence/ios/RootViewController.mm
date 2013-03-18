@@ -176,6 +176,21 @@
     [self.managedObjectContext save:nil];
 }
 
+-(void)storeCalibrationPoint:(NSString*) identifier
+           freqThresh:(double) freq
+            volThresh:(double) vol
+         audioChannel:(int) channel
+{
+    TestData *dataPoint = (TestData *)[NSEntityDescription insertNewObjectForEntityForName:@"TestData" inManagedObjectContext:self.managedObjectContext];
+    
+    [dataPoint setFreq:[NSNumber numberWithDouble:freq]];
+    [dataPoint setVolume:[NSNumber numberWithDouble:vol]];
+    [dataPoint setChannel:[NSNumber numberWithDouble:channel]];
+    [dataPoint setSession:identifier];
+    
+    [self.managedObjectContext save:nil];
+}
+
 -(iOSBridge::DataPoint *)getData
 {
     NSManagedObjectContext *moc = [self managedObjectContext];

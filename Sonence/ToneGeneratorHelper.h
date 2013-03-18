@@ -19,25 +19,36 @@ class  ToneGeneratorHelper {
         ToneGeneratorHelper(int numOfAsteroids);
         ~ToneGeneratorHelper();
         void ShowAlert();
+    
+        void maxToneVolume();
+        void enableTones();
+        void disableTones();
         void playRandomTone();
         void addTone(float frequency, double duration, int index);
         void playConstantTone(float frequency, double duration, int index);
         void playOscillatingTone(float frequency, double duration, int index);
         void playDecreasingTone(float frequency, double duration, int index);
         float removeTone(int index);
+        int getMicVolume();
+
+    
         void playBackgroundMusic(std::string fileName);
         void enableBackground();
         void disableBackground();
+        void oscillateBackground();
+    
+        void calibrate();
+
+    
         void play();
         void stop();
-        void enableTones();
-        void disableTones();
-        void maxToneVolume();
+
+        
         void playExplosion();
+    
         float getAmplitude();
         float getVolume();
         void setVolume(float level);
-        void oscillateBackground();
     
 
     

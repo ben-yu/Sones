@@ -80,6 +80,7 @@ AURenderCallbackStruct MoAudio::m_inputProc;
 AURenderCallbackStruct MoAudio::m_renderProc;
 void * MoAudio::m_bindle = NULL;
 AudioBufferList * MoAudio::inputBuffer = NULL;
+SInt16 MoAudio::micVol = 0;
 
 // number of buffers
 #define MO_DEFAULT_NUM_BUFFERS   3
@@ -184,7 +185,16 @@ static OSStatus SMALLInputProc(
             printf( "MoAudio: render procedure encountered error %d\n", (int)err );
             return err;
         }
+        SInt16 *micPointer = (SInt16 *) MoAudio::inputBuffer->mBuffers[0].mData;
+        SInt16 accum;
+        
+        for (int i = 0; i < inNumberFrames; i++)
+        {
+            accum += abs(micPointer[i])/inNumberFrames;
+        }
+        MoAudio::micVol = accum;
     }
+    
     return err;
 }
 
@@ -508,10 +518,7 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
     
     // TODO: fix this
     assert( numChannels == 2 );
-    
-    // check audio input
-    checkInput();
-    
+        
     m_inputProc.inputProc = SMALLInputProc;
     // uh, this probably shouldn't be NULL
     m_inputProc.inputProcRefCon = NULL;
@@ -565,6 +572,10 @@ bool MoAudio::init( Float64 srate, UInt32 frameSize, UInt32 numChannels )
         // TODO: "couldn't set audio session active\n"
         return false;
     }
+    
+    // check audio input
+    checkInput();
+    
     UInt32 category;
     if (MoAudio::m_handleInput) {
         category = kAudioSessionCategory_PlayAndRecord;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="64" height="64" tilewidth="32" tileheight="32">
+ <tileset firstgid="1" name="tile 0" tilewidth="32" tileheight="32" spacing="2" margin="2">
+  <image source="fixed-ortho-test2.png" width="640" height="400"/>
+ </tileset>
+ <layer name="Layer 0" width="64" height="64">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAA+2WPS9EQRSGpyDUuxoUFIJENMsqaen8BwoqGjSbIEiQUFFRqH1FR8dPc26yN/fs5MzsfNy5e8X7JG8yO5/nnTkze5UCAAAAAAAAAAAAAAAAAAAAAAAAAAAA/GduSLeDDgIkp8HKb6T3yPnOSOeGtjrmVO5/l/RN+omc75P0FTlHCoY85MoWaZu0w+oy/3eke00XgXHvkfYDx0roOdgwdXTggHRIOmJ1+vlLOd/xWDt1Ps1Ejr/Ufufx2u563uaytuS/o4o9lNhgyhgnTZAmhb4rDjFwdF/cf0sV8U45jHVZ2yWf+rFAWiMtCm2+/nW4/xFBNtZZ+Zh0IuhUlZP/q4b6mPufwf3PC7Lhe/9b3tEVmPy73v8H0qNQr/ufVYX3uT5z8rXHlHrKy/n9fia9aHp1jFfH5N81//m3Af9Oijn/bO0r0rXq9V8WbVbeVPKblN3B6W75Q/Xm2BJpuVvm/nk51H82d4PNxf3b8rxtacsZJo1WqBwf/ynjkeJIqRD/VccoqenZf9ZQr3tqCm2Sf9/16yqbJ5v/MvbeZw9T7bfNU6j/ZsJ4y95v3ZNr/tdJMftdd/+ms3Q9X1//Upvk/6+9f67vP/dm81/G2in30PVO2DyF+k/x/sXOZxqfwn8V5xuaU6b/+BT+Q+IP7Rcq3VOq93/Q3wSu/l3Pv45eqvSfSr9CFKweAEAAAA==
+  </data>
+ </layer>
+</map>

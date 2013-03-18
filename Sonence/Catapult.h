@@ -13,6 +13,8 @@
 #include "Box2D.h"
 #include "ToneGeneratorHelper.h"
 #include "DataStore.h"
+#include "CCLayerPanZoom.h"
+#include "GLES-Render.h"
 
 USING_NS_CC;
 
@@ -28,10 +30,10 @@ private:
     b2Body* m_pBody;    // strong ref
 };
 
-class CannonLayer : public CCLayer
+class CannonLayer : public CCLayerPanZoom
 {
     b2World* world;
-    //GLESDebugDraw* m_debugDraw;
+    GLESDebugDraw* m_debugDraw;
     
 public:
     CannonLayer();
@@ -44,6 +46,7 @@ public:
     virtual void draw();
     
     void addNewSpriteAtPosition(CCPoint p);
+    void spawnTarget();
     void update(float dt);
     void startGameCallback(CCObject* pSender);
     
@@ -52,16 +55,23 @@ public:
     iOSBridge::ToneGeneratorHelper *toneGenHelp;    // Sound Generator
     iOSBridge::DataStore *dataStoreHandler;         // Data Store Handler
     
-    virtual void ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
-    virtual void ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
-    virtual void ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    void ccTouchesBegan(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    void ccTouchesMoved(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    void ccTouchesEnded(cocos2d::CCSet* touches, cocos2d::CCEvent* event);
+    
     CCTexture2D* m_pSpriteTexture;
     CCSprite* cannon;
-    
+    CCSprite *background;
+    CCSprite *target;
     CannonBallSprite* cannonBall;
     float vol_meas;
     float curAngle = 0.0f;
     int countTimes;
+    bool rotatingCannon = false;
+    
+    
+    unsigned int m_gid;
+    unsigned int m_gid2;
     
     int e_columnCount = 8;
     int e_rowCount = 10;
@@ -105,6 +115,19 @@ public:
 private:
 
     //rapidjson::Document jsonDoc;
+    
+};
+
+class PauseSceneLayer4 : public CCLayer
+{
+public:
+    PauseSceneLayer4();
+    ~PauseSceneLayer4();
+    
+    virtual void resumeCallback(CCObject* pSender);
+    virtual void MainMenuCallback(CCObject* pSender);
+    void musicCallback(CCObject *sender);
+    void fxCallback(CCObject *sender);
     
 };
 

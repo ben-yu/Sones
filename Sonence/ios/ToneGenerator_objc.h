@@ -29,8 +29,8 @@ struct AudioData{
     SineWave **sineWaves;
     FileLoop *backgroundMusic;
     FileWvIn *explosion;
-    float lowerBound = 0.001;
-    float upperBound = 1.0;
+    float lowerBound = 0.0001;
+    float upperBound = 2.0;
     int numAsteroids;
     int toneIndex; // 0 - L , 1 - R, 2 - Both
     BOOL backgroundEnabled = true;
@@ -75,6 +75,7 @@ struct AudioData{
 - (void) MaxTone;
 - (void) playExplosion;
 - (NSNumber *) getAmplitude;
+- (SInt32) getMicVolume;
 - (Float32) getVolume;
 - (void) setVolume:(float) level;
 - (void) oscillateBackground;

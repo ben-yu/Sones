@@ -44,7 +44,9 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
             if (!data->maxVol) {
                 amp = ((Float32) (pow(10.0,(98.0*data->myAsymp[0]->tick() - 98.0)/20.0)));
                 fx = amp * data->sineWaves[0]->tick();
-            } else {
+            } else if (data->oscillateBackground) {
+                fx = 0.01 * data->sineWaves[0]->tick();
+            }else {
                 amp = data->upperBound;
                 fx = amp * data->sineWaves[0]->tick();
             }
@@ -250,12 +252,13 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
          toneNum:(int) index
 {
     audioData.sineWaves[0]->setFrequency(frequency);
-    audioData.myAsymp[0]->setTarget(100.0);
+    audioData.myAsymp[0]->setValue(0.0);
+    audioData.myAsymp[0]->setTarget(1.0);
     audioData.myAsymp[0]->setTime(duration);
     audioData.toneIndex = index;
     audioData.maxVol = true;
     audioData.oscillate = true;
-    audioData.upperBound = 0.1;
+    audioData.upperBound = 1.0;
     audioData.oscillateBackground = true;
 }
 
@@ -315,6 +318,11 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
 - (void) playExplosion
 {
     audioData.playExplosion = true;
+}
+
+- (SInt32) getMicVolume
+{
+    return MoAudio::micVol;
 }
 
 - (Float32) getVolume

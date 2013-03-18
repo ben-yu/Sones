@@ -117,9 +117,10 @@ bool AppDelegate::applicationDidFinishLaunching()
     CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
     CCLayer* pLayer5 = new LevelLayer();
+    CCLayer* pLayer6 = new CalibrateLayer();
     
     
-    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, NULL);
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, pLayer6, NULL);
     pScene->addChild(layer, 0);
     
     pLayer1->release();
@@ -127,6 +128,7 @@ bool AppDelegate::applicationDidFinishLaunching()
     pLayer3->release();
     pLayer4->release();
     pLayer5->release();
+    pLayer6->release();
         
     // run
     pDirector->runWithScene(pScene);

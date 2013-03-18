@@ -81,6 +81,7 @@ void CountingGameLayer::onEnter()
     this->dataStoreHandler = ((CountingGame *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
     this->searchHelper = new MLSearch();
+    searchHelper->setMode(1);
 
     
     this->scheduleUpdate(); // Start updating
@@ -99,17 +100,16 @@ void CountingGameLayer::onEnter()
     _curAsteroidCount = 0;
     
     for (int i=0; i < 10; i++) {
-        baseVolumes[i] = 0.1;
-        volDiffs[i] = 0.0;
+        baseVolumes[i] = 0.5; //dB vol
+        volDiffs[i] = -0.1;
     }
     this->scheduleOnce(schedule_selector(CountingGameLayer::playTones), 3.0);
 }
 
 void CountingGameLayer::update(float dt) {
     
-    float curTimeMillis = getTimeTick();
-    
-    CCSize winSize = CCDirector::sharedDirector()->getWinSize();
+    //float curTimeMillis = getTimeTick();
+    //CCSize winSize = CCDirector::sharedDirector()->getWinSize();
     
 }
 
@@ -154,8 +154,8 @@ void CountingGameLayer::endTutorial()
 void CountingGameLayer::playTones()
 {
     numTones = (rand() % 2);
-    earIndex = rand() % 2;
-    freqIndex = rand() % 5;
+    earIndex = 1;
+    freqIndex = 3;
     volDelta = 0.0;
     this->schedule(schedule_selector(CountingGameLayer::scheduleTone), 2.0, numTones, 0.0);
     searchHelper->cur_freq = freqIndex;
@@ -170,8 +170,10 @@ void CountingGameLayer::scheduleTone()
 void CountingGameLayer::playSingleTone()
 {
     float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
-    toneGenHelp->playConstantTone(randFrequency, baseVolumes[freqIndex] + volDelta, earIndex);   // Play pure-tone
-    volDelta = volDiffs[freqIndex]/120.0;
+    baseVol = ((float) (pow(10.0,(baseVolumes[earIndex*5 + freqIndex] - 128.0))));
+    toneGenHelp->playConstantTone(randFrequency, baseVolumes[earIndex*5 + freqIndex] + volDelta, earIndex);   // Play pure-tone
+    
+    volDelta = volDiffs[5*earIndex + freqIndex];
 }
 
 void CountingGameLayer::stopTones(){
@@ -258,20 +260,25 @@ void CountingGameLayer::menuCloseCallback(CCObject* pSender)
 void CountingGameLayer::pressedOne()
 {
     if (numTones == 0) {
-        volDiffs[freqIndex] = searchHelper->getNextTone(baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex, true);
+        //volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
     } else {
-        volDiffs[freqIndex] = searchHelper->getNextTone(baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex, false);
+        volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
+        dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
+
     }
+    CCLog("Index: %d, Vol: %f", earIndex*5 + freqIndex, volDiffs[earIndex*5 + freqIndex]);
     playTones();
 }
 
 void CountingGameLayer::pressedTwo()
 {
     if (numTones == 1) {
-        volDiffs[freqIndex] = searchHelper->getNextTone(baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex, true);
+        volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
+        dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
     } else {
-        volDiffs[freqIndex] = searchHelper->getNextTone(baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex, false);
+        //volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
     }
+    CCLog("Index: %d, Vol: %f", earIndex*5 + freqIndex, volDiffs[earIndex*5 + freqIndex]);
     playTones();
 }
 

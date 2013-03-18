@@ -118,6 +118,7 @@ private:
     float initTime;
     float touchTime;
     float finalTime;
+    float baseVol;
     float volDelta;
     
     float baseVolumes[10];

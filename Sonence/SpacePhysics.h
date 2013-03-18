@@ -31,6 +31,7 @@ class EnemySprite : public CCSprite
 {
 public:
     EnemySprite();
+    ~EnemySprite();
     void setPhysicsBody(b2Body * body);
     b2Body* getPhysicsBody();
     virtual bool isDirty(void);
@@ -155,6 +156,7 @@ private:
     CCSprite *txtWindow;            // UI Stuff
     CCSprite *healthBar;
     CCProgressTimer *hpBar;
+    CCProgressTimer *bossBar;
     CCTexture2D* m_pSpriteTexture;
     CCTexture2D* missleTexture;
     
@@ -197,6 +199,7 @@ private:
     // Player Data
     CCPoint playerPos;
     int _health = 100;
+    int bossHealth = 100;
     
     float *alphaTargets;
     float *timeTargets;

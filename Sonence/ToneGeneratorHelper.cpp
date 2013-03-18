@@ -116,9 +116,24 @@ namespace iOSBridge{
         return tmp;
     }
     
+    int ToneGeneratorHelper::getMicVolume()
+    {
+        int tmp = [((ToneGenerator_objc *)toneGenerator_objc) getMicVolume];
+        return tmp;
+    }
+    
     void ToneGeneratorHelper::setVolume(float level)
     {
         [((ToneGenerator_objc *)toneGenerator_objc) setVolume: level];
+    }
+    
+    
+    
+    void ToneGeneratorHelper::calibrate()
+    {
+        for (int i = 0; i < 10; i++) {
+            this->playConstantTone(1.0, 1.0, 0);
+        }
     }
     
 }

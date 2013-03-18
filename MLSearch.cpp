@@ -11,9 +11,9 @@
 
 MLSearch::MLSearch()
 {
-    for (int i=0; i < numOfAlphas; i++)
+    for (int i=-numOfAlphas/2; i < numOfAlphas/2; i++)
     {
-        alphaValues[i] = i * 0.1f;
+        alphaValues[i+numOfAlphas/2] = i * 0.2f;
     }
     
     for (int i=0; i < numOfGammas; i++)
@@ -46,26 +46,39 @@ double MLSearch::invLogistic(double p_target, double alpha, double beta, double 
 
 double MLSearch::getNextTone(double x, int channel, bool hit)
 {
-    double max = 0;
-    int max_i, max_j = 0;
-    // Fill probability table & find max
-    for (int i=0; i < numOfAlphas; i++) {
-        for (int j=0; j < numOfGammas; j++)
-        {
-            if (hit)
-                this->probTable[channel][cur_freq][i][j] *= logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
-            else
-                this->probTable[channel][cur_freq][i][j] *= 1.0 - logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
-            
-            if (probTable[channel][cur_freq][i][j] > max) {
-                max = probTable[channel][cur_freq][i][j];
-                max_i = i;
-                max_j = j;
+    if (mode == 0) {
+        double max = 0;
+        int max_i, max_j = 0;
+        // Fill probability table & find max
+        for (int i=0; i < numOfAlphas; i++) {
+            for (int j=0; j < numOfGammas; j++)
+            {
+                if (hit)
+                    this->probTable[channel][cur_freq][i][j] *= logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
+                else
+                    this->probTable[channel][cur_freq][i][j] *= 1.0 - logistic(x,alphaValues[i],beta,gammaValues[j],lambda);
+                
+                if (probTable[channel][cur_freq][i][j] > max) {
+                    max = probTable[channel][cur_freq][i][j];
+                    max_i = i;
+                    max_j = j;
+                }
             }
         }
+        // Calculate new level
+        return invLogistic(0.6, alphaValues[max_i], beta, gammaValues[max_j], lambda); // Sweetspot of 0.6 TP rates
+    } else {
+        // Staircase Search
+        if (x <= 0 || (hit && !prevMode) || (!hit && prevMode)) {
+            stepSize = -stepSize/2;
+        }
+        prevMode = hit;
+        return stepSize;
+        
     }
+}
 
-    // Calculate new level
-    return invLogistic(0.6, alphaValues[max_i], beta, gammaValues[max_j], lambda); // Sweetspot of 0.6 TP rate
-    
+void MLSearch::setMode(int mode)
+{
+    this->mode = mode;
 }

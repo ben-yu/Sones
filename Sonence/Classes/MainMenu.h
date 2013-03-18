@@ -69,8 +69,8 @@ public:
     void fxCallback(CCObject* sender);
     void sensitivityCallback(CCObject* sender);
     void qualityCallback(CCObject* sender);
-    
-    
+    void calibrateCallback(CCObject* sender);
+        
     CREATE_FUNC(OptionsLayer);
 private:
     
@@ -86,6 +86,27 @@ public:
     CREATE_FUNC(CreditsLayer);
 private:
     
+};
+
+class CalibrateLayer : public CCLayer
+{
+public:
+    CalibrateLayer();
+    virtual void onEnter();
+    void backCallback(CCObject* pSender);
+    void calibrateCallback(CCObject* pSender);
+    void startCallback(CCObject* sender);
+    void playSingleTone();
+    void stopAndMeasureTone();
+
+    CREATE_FUNC(CalibrateLayer);
+private:
+    iOSBridge::ToneGeneratorHelper *toneGenHelp;
+    iOSBridge::DataStore *dataStoreHandler;
+    
+    float decibel_levels[100][100];
+    int volIndex = 0;
+    int freqIndex = 0;
 };
 
 class MainMenu : public CCScene

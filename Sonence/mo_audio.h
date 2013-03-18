@@ -166,6 +166,7 @@ public: // ge: making this public was a hack
     static MoCallback m_callback;
     // static Float32 * m_buffer;
     // static UInt32 m_bufferFrames;
+    static SInt16 micVol;
     static AudioUnit m_au;
     static bool m_isMute;
     static bool m_handleInput;

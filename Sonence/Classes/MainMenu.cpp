@@ -225,8 +225,8 @@ void LevelLayer::startCannonCallback(CCObject* pSender)
         pScene->release();
     }
     pScene->toneGenHelp->playBackgroundMusic("main_background.wav");
-    pScene->toneGenHelp->enableTones();
-    pScene->toneGenHelp->playOscillatingTone(1000.0, 1.0, 2);
+    //pScene->toneGenHelp->enableTones();
+    pScene->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
     pScene->toneGenHelp->oscillateBackground();
 }
 
@@ -303,8 +303,8 @@ OptionsLayer::OptionsLayer()
                                                                  NULL );
     
     CCMenuItemFont::setFontName( "PressStart2P-Regular" );
-    CCMenuItemFont::setFontSize(16);
-    CCMenuItemFont* title4 = CCMenuItemFont::create( "Sensitivity" );
+    CCMenuItemFont::setFontSize(12);
+    CCMenuItemFont* title4 = CCMenuItemFont::create( "Accel. Sensitivity" );
     title4->setEnabled(false);
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize(34);
@@ -323,6 +323,9 @@ OptionsLayer::OptionsLayer()
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize( 34 );
     
+    CCLabelTTF* calibrateLabel = CCLabelTTF::create("Calibrate", "Ubuntu-Regular", 24);
+    CCMenuItemLabel* cal = CCMenuItemLabel::create(calibrateLabel, this, menu_selector(OptionsLayer::calibrateCallback) );
+    
     CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
     CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(OptionsLayer::backCallback) );
     
@@ -331,9 +334,9 @@ OptionsLayer::OptionsLayer()
                                   item1, item2,
                                   title3, title4,
                                   item3, item4,
-                                  back, NULL ); // 9 items.
+                                  cal, back, NULL ); // 9 items.
     
-    menu->alignItemsInColumns(2, 2, 2, 2, 1, NULL);
+    menu->alignItemsInColumns(2, 2, 2, 2, 1, 1, NULL);
     
     addChild(menu);
     
@@ -363,6 +366,12 @@ void OptionsLayer::fxCallback(CCObject* sender)
 void OptionsLayer::sensitivityCallback(CCObject* sender)
 {
     std::cout << "selected item: %x index:%d" << dynamic_cast<CCMenuItemToggle*>(sender)->selectedItem() << dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex();
+}
+
+
+void OptionsLayer::calibrateCallback(CCObject* sender)
+{
+    ((CCLayerMultiplex*)m_pParent)->switchTo(5);
 }
 
 
@@ -414,6 +423,92 @@ void CreditsLayer::backCallback(CCObject* sender)
 {
     ((CCLayerMultiplex*)m_pParent)->switchTo(0);
 }
+
+//------------------------------------------------------------------
+//
+// Calibrate Layer
+//
+//------------------------------------------------------------------
+
+CalibrateLayer::CalibrateLayer()
+{
+    
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    CCLabelTTF *creditText = CCLabelTTF::create("Place your left earbud on the mic", "Audiowide-Regular", 12.0);
+    
+    creditText->setPosition(ccp(s.width/2,s.height*0.9));
+    
+    addChild(creditText);
+    
+    CCLabelTTF* startLabel = CCLabelTTF::create("START", "Ubuntu-Regular", 30);
+    CCMenuItemLabel* startButton = CCMenuItemLabel::create(startLabel, this, menu_selector(CalibrateLayer::startCallback));
+    startButton->setPosition(ccp(0,s.height/2));
+    
+    CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
+    CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(CalibrateLayer::backCallback) );
+    
+    CCMenu* menu = CCMenu::create(startButton,back,NULL);
+    addChild(menu);
+    menu->setPosition(ccp(s.width/2,s.height*0.2));
+    
+    
+}
+
+
+void CalibrateLayer::onEnter()
+{
+    CCLayer::onEnter();
+    toneGenHelp = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator();
+    toneGenHelp->enableTones();
+    toneGenHelp->disableBackground();
+    dataStoreHandler = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore();
+    freqIndex = 0;
+    volIndex = 0;
+}
+
+void CalibrateLayer::startCallback(CCObject* sender)
+{
+    CCLog("Vol: %d" ,this->toneGenHelp->getMicVolume());
+    toneGenHelp->enableTones();
+    this->schedule(schedule_selector(CalibrateLayer::playSingleTone), 0.5, 10000, 0.0);
+    this->schedule(schedule_selector(CalibrateLayer::stopAndMeasureTone), 0.5, 10000, 0.25);
+}
+
+void CalibrateLayer::playSingleTone()
+{
+    toneGenHelp->playConstantTone(1000.0, volIndex/100.0, 0);   // Play pure-tone
+}
+
+void CalibrateLayer::stopAndMeasureTone()
+{
+    if (volIndex >= 100)
+    {
+        volIndex = 0;
+        toneGenHelp->disableTones();
+        freqIndex++;
+    }
+    decibel_levels[freqIndex][volIndex] = this->toneGenHelp->getMicVolume();
+    if (volIndex > 0)
+        decibel_levels[freqIndex][volIndex] = 20 * log10f(decibel_levels[freqIndex][volIndex]);
+    toneGenHelp->removeTone(0);
+
+    volIndex++;
+}
+
+
+void CalibrateLayer::backCallback(CCObject* sender)
+{
+    ((CCLayerMultiplex*)m_pParent)->switchTo(1);
+}
+
+
+void CalibrateLayer::calibrateCallback(CCObject* sender)
+{
+    toneGenHelp = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator();
+    dataStoreHandler = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getDataStore();
+}
+
 
 //------------------------------------------------------------------
 //

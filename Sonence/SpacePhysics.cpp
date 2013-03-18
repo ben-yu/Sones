@@ -32,6 +32,11 @@ EnemySprite::EnemySprite()
     
 }
 
+EnemySprite::~EnemySprite()
+{
+    m_pBody->GetWorld()->DestroyBody(m_pBody);
+}
+
 void EnemySprite::setPhysicsBody(b2Body * body)
 {
     m_pBody = body;
@@ -100,6 +105,7 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     m_pointCount = 0;
     
     searchHelper = new MLSearch();
+    searchHelper->setMode(1);
     
     //////////////////////////////
     //
@@ -361,7 +367,7 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     _spawnQueue = new CCArray(KNUMASTEROIDS);
     for(int i = 0; i < KNUMASTEROIDS; ++i) {
         
-        CCSprite *asteroid = CCSprite::create("slice_3_0.png");
+        CCSprite *asteroid = CCSprite::create("coin_gold-4-0.png");
         asteroid->setVisible(false);
         addChild(asteroid);
         coins->addObject(asteroid);
@@ -394,6 +400,7 @@ void SpacePhysicsLayer::onEnter()
     this->toneGenHelp->enableTones();
     this->dataStoreHandler = ((SpacePhysicsScene *)this->getParent())->getDataStore();
     this->searchHelper = new MLSearch();
+    searchHelper->setMode(1);
     this->setTouchEnabled(true); // Enable Touch
     
     this->scheduleUpdate(); // Start updating
@@ -413,8 +420,8 @@ void SpacePhysicsLayer::onEnter()
     _nextAsteroid = 0;
     _curAsteroidCount = 0;
     for (int i=0; i < 10; i++) {
-        baseVolumes[i] = 0.5;
-        volDiffs[i] = 0.0;
+        baseVolumes[i] = 0.3;
+        volDiffs[i] = -0.1;
     }
 }
 
@@ -512,14 +519,6 @@ void SpacePhysicsLayer::update(float dt) {
                 hpBar->setPercentage(_health);
                 hitFlag = true;
             }
-            else if (mass2 >= mass1)
-            {
-                nuke[nukeCount++] = body1;
-            }
-            else
-            {
-                nuke[nukeCount++] = body2;
-            }
             
             if (nukeCount == k_maxNuke)
             {
@@ -543,14 +542,20 @@ void SpacePhysicsLayer::update(float dt) {
         if (b != NULL) {
             b->SetActive(false);
             EnemySprite* shotPtr = (EnemySprite*) b->GetUserData();
-            if (b != NULL) {
+            if (shotPtr != NULL) {
                 shotPtr->setVisible(false);
+                //shotPtr->setPhysicsBody(NULL);
+                //removeChild(shotPtr,false);
+                
+                //delete shotPtr;
             }
-            //removeChild(shotPtr,true);
-            //world->DestroyBody(b);
+            
+            //b = NULL;
+
             //b->SetUserData(NULL);
-            //nuke[i] = NULL;
-            //shotPtr->setPhysicsBody(NULL);
+            //world->DestroyBody(b);
+            nuke[i] = NULL;
+
         }
     }
     
@@ -637,31 +642,7 @@ void SpacePhysicsLayer::update(float dt) {
     //////////////////////////////
     
     int index = 0;
-    CCObject *itAster, *itLaser;
-    CCARRAY_FOREACH( coins,itAster) {
-        CCSprite *asteroid = (CCSprite *) itAster;
-        if ( ! asteroid->isVisible() )
-            continue ;
-        CCARRAY_FOREACH(_shipLasers,itLaser) {
-            CCSprite *shipLaser = (CCSprite *) itLaser;
-            if ( ! shipLaser->isVisible() )
-                continue ;
-            if ( shipLaser->boundingBox().intersectsRect(asteroid->boundingBox()) ) {
-                shipLaser->setVisible(false);
-                asteroid->setVisible(false);
-                setAsteroidInvisible(asteroid);
-                _backgroundNode->removeChild(asteroid, 1);
-                score -= 10;
-                continue ;
-            }
-        }
-        if ( playerShip->boundingBox().intersectsRect(asteroid->boundingBox()) ) {
-            asteroid->setVisible(false);
-            setAsteroidInvisible(asteroid);
-            score += 1;
-        }
-    }
-    
+
     // Enemy Collision
     CCObject *itEnemy;
     CCARRAY_FOREACH( homing_missiles,itEnemy) {
@@ -740,12 +721,29 @@ void SpacePhysicsLayer::update(float dt) {
             hpBar->setPercentage(_health);
             toneGenHelp->removeTone(index);
             float tmpVol = toneGenHelp->getVolume();
-            volDiffs[index] = (float) searchHelper->getNextTone(volDiffs[index],earIndex,false);
+            volDiffs[5*earIndex + enemyIndex] += (float) searchHelper->getNextTone(baseVolumes[5*earIndex + enemyIndex] + volDiffs[5*earIndex + enemyIndex],earIndex,false);
+            CCLog("THRESH: %f",volDiffs[5*earIndex + enemyIndex]);
             dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[index], (double) tmpVol, earIndex, 0,0,0);
             hitFlag = true;
         }
     }
-        
+    CCObject *itBoss;
+    CCARRAY_FOREACH( _AIEnemies,itBoss) {
+        CCSprite *boss = (CCSprite *) itBoss;
+        CCObject *itLaser;
+        CCARRAY_FOREACH(_shipLasers,itLaser) {
+            CCSprite *shipLaser = (CCSprite *) itLaser;
+            if ( ! shipLaser->isVisible() )
+                continue ;
+            if ( shipLaser->boundingBox().intersectsRect(boss->boundingBox()) ) {
+                bossHealth--;
+                bossBar->setPercentage(bossHealth/50.0);
+                boss->runAction( CCBlink::create(1.0, 5));
+                continue ;
+            }
+        }
+    }
+    
     //////////////////////////////
     //
     //  Game Stats
@@ -925,6 +923,20 @@ void SpacePhysicsLayer::spawnAIEnemy()
     aiEnemy->setRotation(90.0f);
     aiEnemy->setScale(0.5);
     
+    CCSprite *hp = CCSprite::create("hp.png");
+    bossBar = CCProgressTimer::create(hp);
+    bossBar->setType(kCCProgressTimerTypeBar);
+    bossBar->setMidpoint(ccp(0,0));
+    //    Setup for a horizontal bar since the bar change rate is 0 for y meaning no vertical change
+    bossBar->setBarChangeRate(ccp(1, 0));
+    bossBar->setPosition(ccp(winHeight*0.13,winWidth*0.945));
+    bossBar->setScaleX(0.9);
+    bossBar->setScaleY(0.25);
+    
+    aiEnemy->addChild(bossBar);
+    
+    bossBar->setPercentage(100.0);
+    
     aiEnemy->setPosition(ccp(winHeight/2,winWidth*0.75));
     
     CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(10.0,ccp(0,winWidth*0.75)),CCMoveTo::create(10.0,ccp(winHeight,winWidth*0.75)),NULL);
@@ -942,7 +954,7 @@ void SpacePhysicsLayer::spawnAttackPatterns()
     CCSprite *aiEnemy = (CCSprite *) _AIEnemies->objectAtIndex(0);
     
     float degRot = 180.0;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 10; i++) {
         
         EnemySprite *shot = new EnemySprite();
         shot->initWithTexture(m_pSpriteTexture);
@@ -974,8 +986,8 @@ void SpacePhysicsLayer::spawnTones(int freqIndex, int earIndex)
     float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
     
     searchHelper->cur_freq = freqIndex;
-    toneGenHelp->setVolume(baseVolumes[freqIndex] + volDiffs[freqIndex]/10.0);
-    toneGenHelp->playConstantTone(randFrequency, baseVolumes[freqIndex] + volDiffs[freqIndex]/120.0, earIndex);   // Play pure-tone
+    toneGenHelp->setVolume(baseVolumes[5*earIndex + freqIndex] + volDiffs[5*earIndex + freqIndex]);
+    toneGenHelp->playConstantTone(randFrequency, baseVolumes[5*earIndex + freqIndex] + volDiffs[5*earIndex + freqIndex], earIndex);   // Play pure-tone
     this->earIndex = earIndex;
     
     this->scheduleOnce(schedule_selector(SpacePhysicsLayer::spawnBeam),randDuration);
@@ -1010,7 +1022,8 @@ void SpacePhysicsLayer::deSpawnBeam()
     toneGenHelp->removeTone(0);
     float tmpVol = toneGenHelp->getVolume();
     if (!hitFlag) {
-        volDiffs[enemyIndex] = searchHelper->getNextTone(volDiffs[enemyIndex],earIndex, true);
+        volDiffs[5*earIndex + enemyIndex] += searchHelper->getNextTone(baseVolumes[5*earIndex + enemyIndex] + volDiffs[5*earIndex + enemyIndex],earIndex, true);
+        CCLog("THRESH: %f",volDiffs[5*earIndex + enemyIndex]);
         dataStoreHandler->saveData("Moving_Invaders",(double) sineTones[0], (double) tmpVol, earIndex, 1,0,0);
     }
 }
@@ -1026,17 +1039,17 @@ void SpacePhysicsLayer::spawnAsteroid()
     CCSprite *asteroid = (CCSprite *) coins->objectAtIndex(randomIndex->getValue());
     asteroid->stopAllActions();
     asteroid->setTag(randomIndex->getValue());
-    CCAnimation *normal = animCache->animationByName("asteroid");
-    normal->setRestoreOriginalFrame(true);
-    CCAnimate *animN = CCAnimate::create(normal);
-    CCRepeatForever *seq = CCRepeatForever::create(animN);
+    //CCAnimation *normal = animCache->animationByName("asteroid");
+    //normal->setRestoreOriginalFrame(true);
+    //CCAnimate *animN = CCAnimate::create(normal);
+    //CCRepeatForever *seq = CCRepeatForever::create(animN);
     
     CCFiniteTimeAction *moveSeq = CCSequence::create(CCMoveTo::create(randDuration,
                                                                       ccp(randY,0)),CCCallFuncN::create(this,callfuncN_selector(SpacePhysicsLayer::setAsteroidInvisible)),NULL);
     asteroid->setPosition( ccp(randY,winWidth));
     asteroid->setRotation(-(randY/winHeight)*90.0f - 225.0f);
     asteroid->runAction (moveSeq);
-    asteroid->runAction(seq);
+    //asteroid->runAction(seq);
     
     asteroid->setVisible(true);
     _spawnQueue->removeObject(randomIndex);
