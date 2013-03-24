@@ -259,7 +259,7 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
     b2Body* body = world->CreateBody(&bd);
     
     b2PolygonShape polygon;
-    polygon.SetAsBox(1.0, 0.1);
+    polygon.SetAsBox(0.2, 0.2);
     body->CreateFixture(&polygon, 10000.0f);
     body->SetTransform(b2Vec2(playerShip->getPosition().x/PTM_RATIO,playerShip->getPosition().y/PTM_RATIO), 0.0f);
     b2Vec2 enemyPos = b2Vec2(playerShip->getPosition().x,playerShip->getPosition().y);
@@ -381,7 +381,9 @@ SpacePhysicsLayer::SpacePhysicsLayer(void)
         active_lanes->addObject(lane);
         lane->setVisible(false);
         lane->setRotation(180.0f);
-        lane->setScale(winHeight/lane->getContentSize().height);
+        lane->setScaleY(winHeight/lane->getContentSize().height);
+        lane->setScaleX(0.1*winWidth/lane->getContentSize().width);
+
         addChild(lane);
     }
     
@@ -476,6 +478,8 @@ void SpacePhysicsLayer::update(float dt) {
     int velocityIterations = 8;
     int positionIterations = 3;
     
+    m_pointCount = 0;
+    
     // Instruct the world to perform a single step of simulation. It is
     // generally best to keep the time step and iterations fixed.
     world->Step(dt, velocityIterations, positionIterations);
@@ -502,27 +506,29 @@ void SpacePhysicsLayer::update(float dt) {
         float32 mass2 = body2->GetMass();
         
         
-        if (mass1 > 0.0f && mass2 > 0.0f && !hitFlag)
+        if (mass1 > 0.0f && mass2 > 0.0f)
         {
-            if (sprite1 == playerShip && sprite2->isVisible()) {
-                nuke[nukeCount++] = body2;
-                playerShip->runAction( CCBlink::create(1.0, 5));
-                _health -= 10;
-                hpBar->setPercentage(_health);
-                hitFlag = true;
-            }
-            else if (sprite2 == playerShip && sprite1->isVisible())
-            {
-                nuke[nukeCount++] = body1;
-                playerShip->runAction( CCBlink::create(1.0, 5));
-                _health -= 10;
-                hpBar->setPercentage(_health);
-                hitFlag = true;
-            }
-            
-            if (nukeCount == k_maxNuke)
-            {
-                break;
+            if (sprite1 != NULL && sprite2 != NULL) {
+                if (sprite1 == playerShip && sprite2->isVisible() && !hitFlag) {
+                    nuke[nukeCount++] = body2;
+                    playerShip->runAction( CCBlink::create(1.0, 5));
+                    _health -= 10;
+                    hpBar->setPercentage(_health);
+                    hitFlag = true;
+                }
+                else if (sprite2 == playerShip && sprite1->isVisible() && !hitFlag)
+                {
+                    nuke[nukeCount++] = body1;
+                    playerShip->runAction( CCBlink::create(1.0, 5));
+                    _health -= 10;
+                    hpBar->setPercentage(_health);
+                    hitFlag = true;
+                }
+                
+                if (nukeCount == k_maxNuke)
+                {
+                    break;
+                }
             }
         }
     }
@@ -535,27 +541,21 @@ void SpacePhysicsLayer::update(float dt) {
     while (i < nukeCount)
     {
         b2Body* b = nuke[i++];
-        while (i < nukeCount && nuke[i] == b)
-        {
-            ++i;
-        }
+
         if (b != NULL) {
             b->SetActive(false);
             EnemySprite* shotPtr = (EnemySprite*) b->GetUserData();
             if (shotPtr != NULL) {
-                shotPtr->setVisible(false);
-                //shotPtr->setPhysicsBody(NULL);
-                //removeChild(shotPtr,false);
                 
-                //delete shotPtr;
+                //b = NULL;
+                shotPtr->setVisible(false);
+                shotPtr->setPhysicsBody(NULL);
+                removeChild(shotPtr,true);
             }
-            
-            //b = NULL;
-
-            //b->SetUserData(NULL);
-            //world->DestroyBody(b);
+            b->SetUserData(NULL);
+            world->DestroyBody(b);
+            b = NULL;
             nuke[i] = NULL;
-
         }
     }
     
@@ -741,6 +741,15 @@ void SpacePhysicsLayer::update(float dt) {
                 boss->runAction( CCBlink::create(1.0, 5));
                 continue ;
             }
+        }
+    }
+    CCObject *itCoin;
+    CCARRAY_FOREACH( coins,itCoin) {
+        CCSprite *coin = (CCSprite *) itCoin;
+        if ( coin->boundingBox().intersectsRect(playerShip->boundingBox()) ) {
+            score += 10;
+            coin->setVisible(false);
+            removeChild(coin, true);
         }
     }
     
@@ -1008,7 +1017,7 @@ void SpacePhysicsLayer::spawnBeam()
         index++;
     }
     enemySpawned = false;
-    hitFlag = false;
+    //hitFlag = false;
 }
 
 void SpacePhysicsLayer::deSpawnBeam()
@@ -1201,20 +1210,26 @@ void SpacePhysicsLayer::didAccelerate(CCAcceleration* pAccelerationValue) {
 
 void SpacePhysicsLayer::menuCloseCallback(CCObject* pSender)
 {
-    CCScene* pScene = MainMenu::create();
+    // create a scene. it's an autorelease object
+    CCScene *pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
     CCLayer* pLayer2 = new OptionsLayer();
     CCLayer* pLayer3 = new AudiogramSceneLayer();
     CCLayer* pLayer4 = new CreditsLayer();
+    CCLayer* pLayer5 = new LevelLayer();
+    CCLayer* pLayer6 = new CalibrateLayer();
     
     
-    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, NULL);
+    CCLayerMultiplex* layer = CCLayerMultiplex::create(pLayer1, pLayer2, pLayer3, pLayer4, pLayer5, pLayer6, NULL);
     pScene->addChild(layer, 0);
     
     pLayer1->release();
     pLayer2->release();
     pLayer3->release();
     pLayer4->release();
+    pLayer5->release();
+    pLayer6->release();
+
     
     toneGenHelp->removeTone(0);
     toneGenHelp->playBackgroundMusic("echelon.wav");

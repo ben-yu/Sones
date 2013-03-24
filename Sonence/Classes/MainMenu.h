@@ -23,7 +23,6 @@ class MainMenuLayer : public CCLayer
 public:
     MainMenuLayer();
     virtual void startGameCallback(CCObject* pSender);
-    virtual void draw();
     
     void optionsCallback(CCObject* pSender);
     void levelsCallback(CCObject* pSender);
@@ -129,6 +128,28 @@ private:
     CCMenu* m_pItemMenu;
     iOSBridge::ToneGeneratorHelper *toneGenHelp;
     iOSBridge::DataStore *dataStoreHandler;
+};
+
+class ShaderNode : public CCNode
+{
+public:
+    ShaderNode();
+    
+    bool initWithVertex(const char *vert, const char *frag);
+    void loadShaderVertex(const char *vert, const char *frag);
+    
+    virtual void update(float dt);
+    virtual void setPosition(const CCPoint &newPosition);
+    virtual void draw();
+    
+    static ShaderNode* shaderNodeWithVertex(const char *vert, const char *frag);
+    
+private:
+    
+    ccVertex2F m_center;
+    ccVertex2F m_resolution;
+    float      m_time;
+    GLuint     m_uniformCenter, m_uniformResolution, m_uniformTime;
 };
 
 #endif /* defined(__Sonence__MainMenu__) */

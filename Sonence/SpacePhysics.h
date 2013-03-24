@@ -199,7 +199,7 @@ private:
     // Player Data
     CCPoint playerPos;
     int _health = 100;
-    int bossHealth = 100;
+    int bossHealth = 200;
     
     float *alphaTargets;
     float *timeTargets;

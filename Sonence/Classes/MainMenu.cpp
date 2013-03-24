@@ -26,6 +26,9 @@ MainMenuLayer::MainMenuLayer()
     
     CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", floor(30 * s.width/640));
     title->setPosition(ccp(s.width * 0.32 ,s.height*0.9));
+    CCLabelTTF* title2 = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", floor(30 * s.width/640));
+    title2->setPosition(ccp(s.width * 0.32 -1,s.height*0.9-1));
+    title2->setColor(ccc3(0,0,0));
     
     CCLabelTTF* selectedText = CCLabelTTF::create("News / Updates", "ChelaOne-Regular", floor(14 * s.width/640));
     selectedText->setPosition(ccp(s.width * 0.7 ,s.height * 0.75));
@@ -50,26 +53,13 @@ MainMenuLayer::MainMenuLayer()
     creditsMenuItem->setPosition( CCPointMake( s.width / 4, 2.4*s.height/10 ));
     exitMenuItem->setPosition( CCPointMake( s.width / 4, 1*s.height/10 ));
     this->addChild(pMenu,1);
-    this->addChild(title,1);
+    this->addChild(title,2);this->addChild(title2,1);
     this->addChild(selectedText,1);
-}
-
-void MainMenuLayer::draw(){
-    CCSize s = CCDirector::sharedDirector()->getWinSize();
     
-    ccDrawColor4F(1.0, 1.0, 1.0, 1.0);
-    glLineWidth(1);
-    ccDrawLine(ccp(s.width/10.0,0), ccp(s.width/10.0, 7.0*s.height/10.0));
-    ccDrawLine(ccp(4.0*s.width/10.0,0), ccp(4.0*s.width/10.0, 7.0*s.height/10.0));
-    ccDrawLine(ccp(9.5*s.width/10.0,0), ccp(9.5*s.width/10.0, 8.0*s.height/10.0));
-    ccDrawLine(ccp(5.0*s.width/10.0,8.0*s.height/10.0), ccp(5.0*s.width/10.0, 7.0*s.height/10.0));
-    ccDrawLine(ccp(5.0*s.width/10.0,8.0*s.height/10.0), ccp(9.5*s.width/10.0, 8.0*s.height/10.0));
-    ccDrawLine(ccp(s.width/10.0, 7.0*s.height/10.0), ccp(5.0*s.width/10.0, 7.0*s.height/10.0));
-    ccDrawLine(ccp(s.width/10.0, 5.6*s.height/10.0), ccp(4.0*s.width/10.0, 5.6*s.height/10.0));
-    ccDrawLine(ccp(s.width/10.0, 4.3*s.height/10.0), ccp(4.0*s.width/10.0, 4.3*s.height/10.0));
-    ccDrawLine(ccp(s.width/10.0, 3.0*s.height/10.0), ccp(4.0*s.width/10.0, 3.0*s.height/10.0));
-    ccDrawLine(ccp(s.width/10.0, 1.7*s.height/10.0), ccp(4.0*s.width/10.0, 1.7*s.height/10.0));
+    ShaderNode *sn = ShaderNode::shaderNodeWithVertex("shader.vsh", "shader.fsh");
+    sn->setPosition(ccp(s.width/2, s.height/2));
     
+    addChild(sn);    
 }
 
 void MainMenuLayer::levelsCallback(CCObject* pSender){
@@ -224,7 +214,7 @@ void LevelLayer::startCannonCallback(CCObject* pSender)
         CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
-    pScene->toneGenHelp->playBackgroundMusic("main_background.wav");
+    pScene->toneGenHelp->playBackgroundMusic("white_noise.wav");
     //pScene->toneGenHelp->enableTones();
     pScene->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
     pScene->toneGenHelp->oscillateBackground();
@@ -555,4 +545,110 @@ void MainMenu::onEnter()
     toneGenHelp->playBackgroundMusic("echelon.wav");
     dataStoreHandler = new iOSBridge::DataStore();
     this->getDataStore()->rootVCPtr = this->rootVC;
+}
+
+
+///---------------------------------------
+//
+// ShaderNode
+//
+///---------------------------------------
+enum
+{
+    SIZE_X = 256,
+    SIZE_Y = 256,
+};
+
+ShaderNode::ShaderNode()
+:m_center(vertex2(0.0f, 0.0f))
+,m_resolution(vertex2(0.0f, 0.0f))
+,m_time(0.0f)
+,m_uniformCenter(0)
+,m_uniformResolution(0)
+,m_uniformTime(0)
+{
+}
+
+ShaderNode* ShaderNode::shaderNodeWithVertex(const char *vert, const char *frag)
+{
+    ShaderNode *node = new ShaderNode();
+    node->initWithVertex(vert, frag);
+    node->autorelease();
+    
+    return node;
+}
+
+bool ShaderNode::initWithVertex(const char *vert, const char *frag)
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    loadShaderVertex(vert, frag);
+    
+    m_time = 0;
+    m_resolution = vertex2(s.width, s.height);
+    
+    scheduleUpdate();
+    
+    setContentSize(CCSizeMake(s.width, s.height));
+    setAnchorPoint(ccp(0.5f, 0.5f));
+    
+    return true;
+}
+
+void ShaderNode::loadShaderVertex(const char *vert, const char *frag)
+{
+    CCGLProgram *shader = new CCGLProgram();
+    shader->initWithVertexShaderFilename(vert, frag);
+    
+    shader->addAttribute("aVertex", kCCVertexAttrib_Position);
+    shader->link();
+    
+    shader->updateUniforms();
+    
+    m_uniformCenter = glGetUniformLocation(shader->getProgram(), "center");
+    m_uniformResolution = glGetUniformLocation(shader->getProgram(), "resolution");
+    m_uniformTime = glGetUniformLocation(shader->getProgram(), "time");
+    
+    this->setShaderProgram(shader);
+    
+    shader->release();
+}
+
+void ShaderNode::update(float dt)
+{
+    m_time += dt;
+}
+
+void ShaderNode::setPosition(const CCPoint &newPosition)
+{
+    CCNode::setPosition(newPosition);
+    CCPoint position = getPosition();
+    m_center = vertex2(position.x * CC_CONTENT_SCALE_FACTOR(), position.y * CC_CONTENT_SCALE_FACTOR());
+}
+
+void ShaderNode::draw()
+{
+    CC_NODE_DRAW_SETUP();
+    
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    float w = s.width, h = s.height;
+    GLfloat vertices[12] = {0,0, w,0, w,h, 0,0, 0,h, w,h};
+    
+    //
+    // Uniforms
+    //
+    getShaderProgram()->setUniformLocationWith2f(m_uniformCenter, m_center.x, m_center.y);
+    getShaderProgram()->setUniformLocationWith2f(m_uniformResolution, m_resolution.x, m_resolution.y);
+    
+    // time changes all the time, so it is Ok to call OpenGL directly, and not the "cached" version
+    glUniform1f(m_uniformTime, m_time);
+    
+    ccGLEnableVertexAttribs( kCCVertexAttribFlag_Position );
+    
+    glVertexAttribPointer(kCCVertexAttrib_Position, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+    
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    
+    CC_INCREMENT_GL_DRAWS(1);
 }

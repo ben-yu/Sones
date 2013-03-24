@@ -67,6 +67,8 @@ public:
     
 private:
     // Game Resources - Sprites
+    CCSprite *happyEmoticon;
+    CCSprite *sadEmoticon;
     CCMenuItemImage *oneButton;
     CCMenuItemImage *twoButton;
     

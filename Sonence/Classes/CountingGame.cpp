@@ -31,6 +31,22 @@ CountingGameLayer::CountingGameLayer(void)
     //
     //////////////////////////////
     
+    CCSprite *cat = CCSprite::create("cat.png");
+    cat->setPosition(ccp(winWidth/2,winHeight/2));
+    addChild(cat);
+    
+    happyEmoticon = CCSprite::create("happy.png");
+    happyEmoticon->setPosition(ccp(winWidth/2, 0.65*winHeight));
+    addChild(happyEmoticon);
+    happyEmoticon->setVisible(false);
+    
+    sadEmoticon = CCSprite::create("sad.png");
+    sadEmoticon->setPosition(ccp(winWidth/2, 0.65*winHeight));
+    addChild(sadEmoticon);
+    sadEmoticon->setVisible(false);
+
+
+    
     oneLabel = CCLabelTTF::create("1", "PressStart2P-Regular", 12.0);
     twoLabel = CCLabelTTF::create("2", "PressStart2P-Regular", 12.0);
     tutorialText = CCLabelTTF::create("", "Audiowide-Regular", 30.0);
@@ -46,7 +62,7 @@ CountingGameLayer::CountingGameLayer(void)
 
     oneButton->setPosition(ccp(-winWidth*0.1,0));
     twoButton->setPosition(ccp(winWidth*0.1,0));
-    menu->setPosition(ccp(winWidth*0.5, winHeight*0.5));
+    menu->setPosition(ccp(winWidth*0.5, winHeight*0.3));
     
     oneLabel->setPosition(ccp(winWidth*0.4,winHeight*0.4));
     this->addChild(oneLabel, 1);
@@ -260,8 +276,10 @@ void CountingGameLayer::menuCloseCallback(CCObject* pSender)
 void CountingGameLayer::pressedOne()
 {
     if (numTones == 0) {
+        happyEmoticon->setVisible(true);sadEmoticon->setVisible(false);
         //volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
     } else {
+        happyEmoticon->setVisible(false);sadEmoticon->setVisible(true);
         volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
         dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
 
@@ -273,9 +291,11 @@ void CountingGameLayer::pressedOne()
 void CountingGameLayer::pressedTwo()
 {
     if (numTones == 1) {
+        happyEmoticon->setVisible(true);sadEmoticon->setVisible(false);
         volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
         dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
     } else {
+        happyEmoticon->setVisible(false);sadEmoticon->setVisible(true);
         //volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
     }
     CCLog("Index: %d, Vol: %f", earIndex*5 + freqIndex, volDiffs[earIndex*5 + freqIndex]);
