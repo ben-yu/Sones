@@ -148,8 +148,14 @@ public:
     
     virtual void resumeCallback(CCObject* pSender);
     virtual void MainMenuCallback(CCObject* pSender);
+    virtual void onEnter();
     void musicCallback(CCObject *sender);
     void fxCallback(CCObject *sender);
+private:
+    CCMenuItemToggle *item2;
+    CCMenuItemToggle *item3;
+    
+    iOSBridge::ToneGeneratorHelper *toneGenHelp;
     
 };
 

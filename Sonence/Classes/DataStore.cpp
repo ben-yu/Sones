@@ -19,10 +19,10 @@ namespace iOSBridge {
         free(returnData);
     }
     
-    void DataStore::saveData(std::string name, double freq, double volume, int channel , int attempts, double init_time, double final_time) {
+    void DataStore::saveData(int nameIndex, double freq, double volume, int channel , int attempts, double init_time, double final_time) {
         RootViewController *vc = (RootViewController *) rootVCPtr;
         
-        [vc storeDataPoint:[NSString stringWithUTF8String:name.c_str()] freqThresh:freq volThresh:volume audioChannel:channel attempts:attempts  reactionTime: init_time
+        [vc storeDataPoint:nameIndex freqThresh:freq volThresh:volume audioChannel:channel attempts:attempts  reactionTime: init_time
                   lastTime:final_time];
     }
     

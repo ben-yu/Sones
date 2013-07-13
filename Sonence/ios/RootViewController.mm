@@ -13,6 +13,7 @@
 #include "CCEGLView.h"
 #include "TestData.h"
 #include "User.h"
+#include "CalibrationData.h"
 
 
 @implementation RootViewController
@@ -155,7 +156,7 @@
     [curUser setUuid:uuid];
 }
 
--(void)storeDataPoint:(NSString*) identifier
+-(void)storeDataPoint:(int) identifier
            freqThresh:(double) freq
             volThresh:(double) vol
          audioChannel:(int) channel
@@ -171,23 +172,21 @@
     [dataPoint setAttempts:[NSNumber numberWithInt:tapCounts]];
     [dataPoint setInit_time:[NSNumber numberWithDouble:initTime]];
     [dataPoint setFinal_time:[NSNumber numberWithDouble:finalTime]];
-    [dataPoint setSession:identifier];
+    [dataPoint setSession:[NSNumber numberWithInt:identifier]];
 
     [self.managedObjectContext save:nil];
 }
 
--(void)storeCalibrationPoint:(NSString*) identifier
+-(void)storeCalibrationPoint:(int) identifier
            freqThresh:(double) freq
             volThresh:(double) vol
          audioChannel:(int) channel
 {
-    TestData *dataPoint = (TestData *)[NSEntityDescription insertNewObjectForEntityForName:@"TestData" inManagedObjectContext:self.managedObjectContext];
+    CalibrationData *dataPoint = (CalibrationData *)[NSEntityDescription insertNewObjectForEntityForName:@"CalibrationData" inManagedObjectContext:self.managedObjectContext];
     
     [dataPoint setFreq:[NSNumber numberWithDouble:freq]];
-    [dataPoint setVolume:[NSNumber numberWithDouble:vol]];
-    [dataPoint setChannel:[NSNumber numberWithDouble:channel]];
-    [dataPoint setSession:identifier];
-    
+    [dataPoint setVol:[NSNumber numberWithDouble:vol]];
+    [dataPoint setChannel:[NSNumber numberWithDouble:channel]];    
     [self.managedObjectContext save:nil];
 }
 
@@ -215,6 +214,7 @@
         dataptr[i].freq = [((TestData *) [reqData objectAtIndex:i]).freq floatValue];
         dataptr[i].vol = [((TestData *) [reqData objectAtIndex:i]).volume floatValue];
         dataptr[i].channel = [((TestData *) [reqData objectAtIndex:i]).channel integerValue];
+        dataptr[i].gameType = [((TestData *) [reqData objectAtIndex:i]).session integerValue];
         [data addObject:[NSValue value:&dataptr[i] withObjCType:@encode(iOSBridge::DataPoint)]];
     }
     

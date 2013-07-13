@@ -94,7 +94,7 @@ void audioCallback( Float32 * buffer, UInt32 framesize, void* userData )
     if (self) {
         
         NSBundle *mainBundle = [NSBundle mainBundle]; // Get Bundle
-        NSString *myFile = [mainBundle pathForResource: @"echelon" ofType: @"wav"]; // Open background music file
+        NSString *myFile = [mainBundle pathForResource: @"OutThere_0" ofType: @"aiff"]; // Open background music file
         
         audioData.numAsteroids = numOfAsteroids;
         audioData.myMandolin = new Mandolin(400);

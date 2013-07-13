@@ -17,6 +17,7 @@
         float freq;
         float vol;
         int channel;
+        int gameType;
     };
     
     iOSBridge::DataPoint *dataptr;
@@ -32,7 +33,7 @@
 @property (nonatomic, retain) NSManagedObjectModel *managedObjectModel;
 @property (nonatomic, retain) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
--(void)storeDataPoint:(NSString*) identifier
+-(void)storeDataPoint:(int) identifier
            freqThresh:(double) freq
             volThresh:(double) vol
          audioChannel:(int) channel

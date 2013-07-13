@@ -77,6 +77,8 @@ struct AudioData{
 - (NSNumber *) getAmplitude;
 - (SInt32) getMicVolume;
 - (Float32) getVolume;
+- (BOOL) getToneStatus;
+- (BOOL) getBackgroundStatus;
 - (void) setVolume:(float) level;
 - (void) oscillateBackground;
 

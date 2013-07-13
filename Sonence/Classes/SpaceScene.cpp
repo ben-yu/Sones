@@ -298,7 +298,7 @@ void SpaceSceneLayer::onEnter()
     CCLayer::onEnter();
     
     this->toneGenHelp = ((SpaceScene *)this->getParent())->getToneGenerator();
-    this->toneGenHelp->playBackgroundMusic("main_background.wav");
+    this->toneGenHelp->playBackgroundMusic("OutThere_0.aiff");
     this->toneGenHelp->enableTones();
     this->dataStoreHandler = ((SpaceScene *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
@@ -453,7 +453,7 @@ void SpaceSceneLayer::update(float dt) {
                 score += 10;
                 enemySpawned = false;
                 
-                dataStoreHandler->saveData("Target_Practice",(double) sineTones[index],  (double) (toneGenHelp->getVolume() * tmpVol), earIndex, touchAttempts,touchTime, finalTime);
+                dataStoreHandler->saveData(1,(double) sineTones[index],  (double) (toneGenHelp->getVolume() * tmpVol), earIndex, touchAttempts,touchTime, finalTime);
                 
                 //char json[100];
                 //sprintf(json, "{\"data_points\":[{\"uuid\":\"%d\",\"freq\":%f,\"game_type\":\"normal\",\"vol\":%f}]}",12345,(double) sineTones[index],(double) tmpVol);
@@ -1000,7 +1000,7 @@ void SpaceSceneLayer::menuCloseCallback(CCObject* pSender)
     pLayer4->release();
     
     toneGenHelp->removeTone(0);
-    toneGenHelp->playBackgroundMusic("echelon.wav");
+    toneGenHelp->playBackgroundMusic("OutThere_0.aiff");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);

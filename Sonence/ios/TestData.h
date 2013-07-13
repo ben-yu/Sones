@@ -15,7 +15,7 @@
 @property (nonatomic, retain) NSNumber * freq;
 @property (nonatomic, retain) NSNumber * volume;
 @property (nonatomic, retain) NSNumber * channel;
-@property (nonatomic, retain) NSString * session;
+@property (nonatomic, retain) NSNumber * session;
 @property (nonatomic, retain) NSNumber * attempts;
 @property (nonatomic, retain) NSNumber * init_time;
 @property (nonatomic, retain) NSNumber * final_time;

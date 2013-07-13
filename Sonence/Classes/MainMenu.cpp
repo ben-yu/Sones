@@ -24,42 +24,37 @@ MainMenuLayer::MainMenuLayer()
 {
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
-    CCLabelTTF* title = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", floor(30 * s.width/640));
-    title->setPosition(ccp(s.width * 0.32 ,s.height*0.9));
-    CCLabelTTF* title2 = CCLabelTTF::create("Sonic Intelligence", "Audiowide-Regular", floor(30 * s.width/640));
-    title2->setPosition(ccp(s.width * 0.32 -1,s.height*0.9-1));
+    CCLabelTTF* title = CCLabelTTF::create("Sones", "Audiowide-Regular", floor(65 * s.width/640));
+    title->setPosition(ccp(s.width * 0.5 ,s.height*0.85));
+    CCLabelTTF* title2 = CCLabelTTF::create("Sones", "Audiowide-Regular", floor(65 * s.width/640));
+    title2->setPosition(ccp(s.width * 0.5 -1,s.height*0.85-1));
     title2->setColor(ccc3(0,0,0));
     
-    CCLabelTTF* selectedText = CCLabelTTF::create("News / Updates", "ChelaOne-Regular", floor(14 * s.width/640));
-    selectedText->setPosition(ccp(s.width * 0.7 ,s.height * 0.75));
+    CCMenuItemImage *item1 = CCMenuItemImage::create("new_game.png", "new_game.png", this, menu_selector(MainMenuLayer::levelsCallback));
+    item1->setScale(0.75); item1->setOpacity(200);
+    CCMenuItemImage *item2 = CCMenuItemImage::create("options.png", "options.png", this, menu_selector(MainMenuLayer::optionsCallback));
+    item2->setScale(0.75); item2->setOpacity(200);
+    CCMenuItemImage *item3 = CCMenuItemImage::create("stats.png", "stats.png", this, menu_selector(MainMenuLayer::statsCallback));
+    item3->setScale(0.75); item3->setOpacity(200);
+    CCMenuItemImage *item4 = CCMenuItemImage::create("credits.png", "credits.png", this, menu_selector(MainMenuLayer::creditsCallback));
+    item4->setScale(0.75); item4->setOpacity(200);
+
     
-    CCLabelTTF* label = CCLabelTTF::create("New Game", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* pMenuItem = CCMenuItemLabel::create(label, this, menu_selector(MainMenuLayer::levelsCallback));
-    CCLabelTTF* optionLabel = CCLabelTTF::create("Options", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* optionMenuItem = CCMenuItemLabel::create(optionLabel, this, menu_selector(MainMenuLayer::optionsCallback));
-    CCLabelTTF* statsLabel = CCLabelTTF::create("Stats", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* statsMenuItem = CCMenuItemLabel::create(statsLabel, this, menu_selector(MainMenuLayer::statsCallback));
-    CCLabelTTF* creditsLabel = CCLabelTTF::create("Credits", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* creditsMenuItem = CCMenuItemLabel::create(creditsLabel, this, menu_selector(MainMenuLayer::creditsCallback));
-    CCLabelTTF* exitLabel = CCLabelTTF::create("Exit", "Ubuntu-Regular", floor(14 * s.width/640));
-    CCMenuItemLabel* exitMenuItem = CCMenuItemLabel::create(exitLabel, this, menu_selector(MainMenuLayer::exitCallback));
-    
-    CCMenu* pMenu =CCMenu::create(pMenuItem, NULL);
-    pMenu->addChild(optionMenuItem);pMenu->addChild(statsMenuItem);pMenu->addChild(creditsMenuItem);pMenu->addChild(exitMenuItem);
+    CCMenu* pMenu = CCMenu::create(item1,item2,item3,item4,NULL);
     pMenu->setPosition(CCPointZero);
-    pMenuItem->setPosition( CCPointMake( s.width/4, 6.3*s.height/10));
-    optionMenuItem->setPosition( CCPointMake( s.width / 4, 5.0*s.height/10 ));
-    statsMenuItem->setPosition( CCPointMake( s.width / 4, 3.7*s.height/10 ));
-    creditsMenuItem->setPosition( CCPointMake( s.width / 4, 2.4*s.height/10 ));
-    exitMenuItem->setPosition( CCPointMake( s.width / 4, 1*s.height/10 ));
+    item1->setPosition( CCPointMake( s.width/2, 6.3*s.height/10));
+    item2->setPosition( CCPointMake( s.width / 2, 5.0*s.height/10 ));
+    item3->setPosition( CCPointMake( s.width / 2, 3.7*s.height/10 ));
+    item4->setPosition( CCPointMake( s.width / 2, 2.4*s.height/10 ));
     this->addChild(pMenu,1);
     this->addChild(title,2);this->addChild(title2,1);
-    this->addChild(selectedText,1);
-    
-    ShaderNode *sn = ShaderNode::shaderNodeWithVertex("shader.vsh", "shader.fsh");
-    sn->setPosition(ccp(s.width/2, s.height/2));
-    
-    addChild(sn);    
+        
+}
+
+void MainMenuLayer::onEnter() {
+    CCLayer::onEnter();
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+        
 }
 
 void MainMenuLayer::levelsCallback(CCObject* pSender){
@@ -117,20 +112,16 @@ LevelLayer::LevelLayer()
 {
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     
-    CCMenuItemImage *item1 = CCMenuItemImage::create("target-dummy.png", "target-dummy-pressed.png", this, menu_selector(LevelLayer::startGameCallback));
-    CCMenuItemImage *item2 = CCMenuItemImage::create("alien-skull.png", "alien-skull-pressed.png", this, menu_selector(LevelLayer::startAccelCallback));
-    CCMenuItemImage *item3 = CCMenuItemImage::create("cannon.png", "anthem.png", this, menu_selector(LevelLayer::startCannonCallback));
-    CCMenuItemImage *item4 = CCMenuItemImage::create("coma.png", "anthem.png", this, menu_selector(LevelLayer::startCountingCallback));
+    CCMenuItemImage *item1 = CCMenuItemImage::create("counting.png", "counting.png", this, menu_selector(LevelLayer::startCountingCallback));
+    CCMenuItemImage *item2 = CCMenuItemImage::create("target_practice.png", "target_practice.png", this, menu_selector(LevelLayer::startGameCallback));
+    CCMenuItemImage *item3 = CCMenuItemImage::create("moving_invaders.png", "moving_invaders.png", this, menu_selector(LevelLayer::startAccelCallback));
+    CCMenuItemImage *item4 = CCMenuItemImage::create("cannon_launch.png", "cannon_launch.png", this, menu_selector(LevelLayer::startCannonCallback));
 
     
-    item1->setScale(0.05 * s.width/640);
-    item2->setScale(0.05 * s.width/640);
-    item3->setScale(0.05 * s.width/640);
-    item4->setScale(0.05 * s.width/640);
-
-    
-    //item2->setEnabled(false);
-    //item3->setEnabled(false);
+    item1->setScale(0.75); item1->setOpacity(200);
+    item2->setScale(0.75); item2->setOpacity(200);
+    item3->setScale(0.75); item3->setOpacity(200);
+    item4->setScale(0.75); item4->setOpacity(200);
     
     CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
     CCMenuItemLabel* back = CCMenuItemLabel::create(label, this, menu_selector(CreditsLayer::backCallback) );
@@ -139,27 +130,21 @@ LevelLayer::LevelLayer()
     CCMenu *menu = CCMenu::create(item1, item2, item3, item4, back, NULL);
     
     menu->setPosition(CCPointZero);
-    item1->setPosition(CCPointMake(s.width/4, s.height/2 + 0.05*item2->getContentSize().width*2));
-    item2->setPosition(CCPointMake(s.width/4, s.height/2));
-    item3->setPosition(CCPointMake(s.width/4, s.height/2 - 0.05*item2->getContentSize().width*2));
-    item4->setPosition(CCPointMake(s.width/4, s.height/2 + 0.1*item2->getContentSize().width*2));
+    item1->setPosition(CCPointMake(s.width/2, s.height/2 + item2->getContentSize().height*2));
+    item2->setPosition(CCPointMake(s.width/2, s.height/2 + 0.5*item2->getContentSize().height*2));
+    item3->setPosition(CCPointMake(s.width/2, s.height/2 ));
+    item4->setPosition(CCPointMake(s.width/2, s.height/2 - 0.5*item2->getContentSize().height*2));
 
-    
-    CCLabelTTF *item1Label = CCLabelTTF::create("Target Practice", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item2Label = CCLabelTTF::create("Moving Invaders", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item3Label = CCLabelTTF::create("Cannon Launch", "PressStart2P-Regular", 12.0);
-    CCLabelTTF *item4Label = CCLabelTTF::create("Counting Game", "PressStart2P-Regular", 12.0);
-
-    
-    item1Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.05*item2->getContentSize().width*2));
-    item2Label->setPosition(CCPointMake(s.width/2, s.height/2));
-    item3Label->setPosition(CCPointMake(s.width/2, s.height/2 - 0.05*item2->getContentSize().width*2));
-    item4Label->setPosition(CCPointMake(s.width/2, s.height/2 + 0.1*item2->getContentSize().width*2));
-
-    
     addChild(menu, 1);
-    addChild(item1Label);addChild(item2Label);addChild(item3Label);addChild(item4Label);
 }
+
+void LevelLayer::draw()
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+
+    ccDrawSolidRect(ccp(0,0), ccp(s.width,s.height), ccc4f(0,0,0,0.5));
+}
+
 
 void LevelLayer::startGameCallback(CCObject* pSender)
 {
@@ -193,6 +178,7 @@ void LevelLayer::startAccelCallback(CCObject* pSender)
     {
         pScene->gameMode = 1;
         pScene->runGame();
+        pScene->rootVC = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->rootVC;
         CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
@@ -211,6 +197,7 @@ void LevelLayer::startCannonCallback(CCObject* pSender)
     {
         pScene->gameMode = 1;
         pScene->runGame();
+        pScene->rootVC = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->rootVC;
         CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
@@ -233,10 +220,11 @@ void LevelLayer::startCountingCallback(CCObject* pSender)
     {
         pScene->gameMode = 1;
         pScene->runGame();
+        pScene->rootVC = ((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->rootVC;
         CCDirector::sharedDirector()->replaceScene(tranScene);
         pScene->release();
     }
-    pScene->toneGenHelp->playBackgroundMusic("main_background.wav");
+    pScene->toneGenHelp->playBackgroundMusic("OutThere_0.aiff");
     pScene->toneGenHelp->enableTones();
     //pScene->toneGenHelp->playOscillatingTone(1000.0, 5.0, 2);
     //pScene->toneGenHelp->oscillateBackground();
@@ -256,17 +244,19 @@ void LevelLayer::backCallback(CCObject* sender)
 
 OptionsLayer::OptionsLayer()
 {
+        
     CCMenuItemFont::setFontName("PressStart2P-Regular");
     CCMenuItemFont::setFontSize(16);
     CCMenuItemFont*title1 = CCMenuItemFont::create("Effects");
     title1->setEnabled(false);
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize(34);
-    CCMenuItemToggle* item1 = CCMenuItemToggle::createWithTarget(this,
-                                                                 menu_selector(OptionsLayer::fxCallback),
-                                                                 CCMenuItemFont::create( "On" ),
-                                                                 CCMenuItemFont::create( "Off"),
-                                                                 NULL );
+    item1 = CCMenuItemToggle::createWithTarget(this,
+                                             menu_selector(OptionsLayer::fxCallback),
+                                             CCMenuItemFont::create( "Off" ),
+                                             CCMenuItemFont::create( "On"),
+                                             NULL );
+    
     
     CCMenuItemFont::setFontName( "PressStart2P-Regular" );
     CCMenuItemFont::setFontSize(16);
@@ -274,23 +264,11 @@ OptionsLayer::OptionsLayer()
     title2->setEnabled(false);
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize(34);
-    CCMenuItemToggle *item2 = CCMenuItemToggle::createWithTarget(this,
-                                                                 menu_selector(OptionsLayer::musicCallback),
-                                                                 CCMenuItemFont::create( "On" ),
-                                                                 CCMenuItemFont::create( "Off"),
-                                                                 NULL );
-    
-    CCMenuItemFont::setFontName( "PressStart2P-Regular" );
-    CCMenuItemFont::setFontSize(16);
-    CCMenuItemFont* title3 = CCMenuItemFont::create( "Quality" );
-    title3->setEnabled( false );
-    CCMenuItemFont::setFontName( "Ubuntu-Regular" );
-    CCMenuItemFont::setFontSize(34);
-    CCMenuItemToggle *item3 = CCMenuItemToggle::createWithTarget(this,
-                                                                 menu_selector(OptionsLayer::qualityCallback),
-                                                                 CCMenuItemFont::create( "High" ),
-                                                                 CCMenuItemFont::create( "Low" ),
-                                                                 NULL );
+    item2 = CCMenuItemToggle::createWithTarget(this,
+                                             menu_selector(OptionsLayer::musicCallback),
+                                             CCMenuItemFont::create( "Off" ),
+                                             CCMenuItemFont::create( "On"),
+                                             NULL );
     
     CCMenuItemFont::setFontName( "PressStart2P-Regular" );
     CCMenuItemFont::setFontSize(12);
@@ -313,7 +291,7 @@ OptionsLayer::OptionsLayer()
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize( 34 );
     
-    CCLabelTTF* calibrateLabel = CCLabelTTF::create("Calibrate", "Ubuntu-Regular", 24);
+    CCLabelTTF* calibrateLabel = CCLabelTTF::create("Calibrate Headphones", "Ubuntu-Regular", 24);
     CCMenuItemLabel* cal = CCMenuItemLabel::create(calibrateLabel, this, menu_selector(OptionsLayer::calibrateCallback) );
     
     CCLabelTTF* label = CCLabelTTF::create("Back", "Ubuntu-Regular", 20);
@@ -322,24 +300,42 @@ OptionsLayer::OptionsLayer()
     CCMenu *menu = CCMenu::create(
                                   title1, title2,
                                   item1, item2,
-                                  title3, title4,
-                                  item3, item4,
+                                  title4, item4,
                                   cal, back, NULL ); // 9 items.
     
-    menu->alignItemsInColumns(2, 2, 2, 2, 1, 1, NULL);
+    menu->alignItemsInColumns(2, 2, 1, 1, 1, 1, NULL);
     
     addChild(menu);
     
     CCSize s = CCDirector::sharedDirector()->getWinSize();
     menu->setPosition(ccp(s.width/2, s.height/2));
+    
+}
+
+void OptionsLayer::onEnter()
+{
+    CCLayer::onEnter();
+    
+    toneGenHelp = (((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator());
+    item1->setSelectedIndex(toneGenHelp->getToneStatus());
+    item2->setSelectedIndex(toneGenHelp->getBackgroundStatus());
+
+
+}
+
+void OptionsLayer::draw()
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    ccDrawSolidRect(ccp(0,0), ccp(s.width,s.height), ccc4f(0,0,0,0.5));
 }
 
 void OptionsLayer::musicCallback(CCObject* sender)
 {
     if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
-        (((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator())->disableBackground();
+        toneGenHelp->enableBackground();
     } else {
-        (((MainMenu *)((CCLayerMultiplex *)m_pParent)->getParent())->getToneGenerator())->enableBackground();
+        toneGenHelp->disableBackground();
     }
 }
 
@@ -350,7 +346,11 @@ void OptionsLayer::qualityCallback(CCObject* sender)
 
 void OptionsLayer::fxCallback(CCObject* sender)
 {
-    std::cout << "selected item: %x index:%d" << dynamic_cast<CCMenuItemToggle*>(sender)->selectedItem() << dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex();
+    if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
+        toneGenHelp->enableTones();
+    } else {
+        toneGenHelp->disableTones();
+    }
 }
 
 void OptionsLayer::sensitivityCallback(CCObject* sender)
@@ -403,6 +403,13 @@ CreditsLayer::CreditsLayer()
     
 }
 
+void CreditsLayer::draw()
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    ccDrawSolidRect(ccp(0,0), ccp(s.width,s.height), ccc4f(0,0,0,0.5));
+}
+
 
 void CreditsLayer::onEnter()
 {
@@ -445,6 +452,12 @@ CalibrateLayer::CalibrateLayer()
     
 }
 
+void CalibrateLayer::draw()
+{
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    ccDrawSolidRect(ccp(0,0), ccp(s.width,s.height), ccc4f(0,0,0,0.5));
+}
 
 void CalibrateLayer::onEnter()
 {
@@ -461,8 +474,8 @@ void CalibrateLayer::startCallback(CCObject* sender)
 {
     CCLog("Vol: %d" ,this->toneGenHelp->getMicVolume());
     toneGenHelp->enableTones();
-    this->schedule(schedule_selector(CalibrateLayer::playSingleTone), 0.5, 10000, 0.0);
-    this->schedule(schedule_selector(CalibrateLayer::stopAndMeasureTone), 0.5, 10000, 0.25);
+    this->schedule(schedule_selector(CalibrateLayer::playSingleTone), 1.0, 10000, 0.0);
+    this->schedule(schedule_selector(CalibrateLayer::stopAndMeasureTone), 1.0, 10000, 0.5);
 }
 
 void CalibrateLayer::playSingleTone()
@@ -542,9 +555,15 @@ void MainMenu::onEnter()
         toneGenHelp = new iOSBridge::ToneGeneratorHelper(1);
     }
     toneGenHelp->removeTone(0);
-    toneGenHelp->playBackgroundMusic("echelon.wav");
+    toneGenHelp->playBackgroundMusic("MyVeryOwnDeadShip.aiff");
     dataStoreHandler = new iOSBridge::DataStore();
     this->getDataStore()->rootVCPtr = this->rootVC;
+    CCSize s = CCDirector::sharedDirector()->getWinSize();
+    
+    ShaderNode *sn = ShaderNode::shaderNodeWithVertex("shader.vsh", "shader.fsh");
+    sn->setPosition(ccp(s.width/2, s.height/2));
+    
+    addChild(sn,-100);
 }
 
 

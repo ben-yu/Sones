@@ -92,7 +92,7 @@ void CountingGameLayer::onEnter()
     CCLayer::onEnter();
     
     this->toneGenHelp = ((CountingGame *)this->getParent())->getToneGenerator();
-    this->toneGenHelp->playBackgroundMusic("main_background.wav");
+    this->toneGenHelp->playBackgroundMusic("OutThere_0.aiff");
     //this->toneGenHelp->enableTones();
     this->dataStoreHandler = ((CountingGame *)this->getParent())->getDataStore();
     this->setTouchEnabled(true); // Enable Touch
@@ -170,8 +170,8 @@ void CountingGameLayer::endTutorial()
 void CountingGameLayer::playTones()
 {
     numTones = (rand() % 2);
-    earIndex = 1;
-    freqIndex = 3;
+    earIndex =  (rand() % 2);
+    freqIndex =  (rand() % 5);
     volDelta = 0.0;
     this->schedule(schedule_selector(CountingGameLayer::scheduleTone), 2.0, numTones, 0.0);
     searchHelper->cur_freq = freqIndex;
@@ -185,8 +185,10 @@ void CountingGameLayer::scheduleTone()
 
 void CountingGameLayer::playSingleTone()
 {
-    float randFrequency = freqIndex * seed_freq + 250.0;    // Calculate frequency
+    happyEmoticon->setVisible(false);sadEmoticon->setVisible(false);
+    float randFrequency = freqIndex * 1600.0 + seed_freq + 250.0;    // Calculate frequency
     baseVol = ((float) (pow(10.0,(baseVolumes[earIndex*5 + freqIndex] - 128.0))));
+    CCLog("Freq: %f",randFrequency);
     toneGenHelp->playConstantTone(randFrequency, baseVolumes[earIndex*5 + freqIndex] + volDelta, earIndex);   // Play pure-tone
     
     volDelta = volDiffs[5*earIndex + freqIndex];
@@ -267,7 +269,7 @@ void CountingGameLayer::menuCloseCallback(CCObject* pSender)
     pLayer4->release();
     
     toneGenHelp->removeTone(0);
-    toneGenHelp->playBackgroundMusic("echelon.wav");
+    toneGenHelp->playBackgroundMusic("OutThere_0.aiff");
     ((MainMenu *) pScene)->setToneGenerator(toneGenHelp);
     ((MainMenu *) pScene)->setDataStore(dataStoreHandler);
     CCDirector::sharedDirector()->replaceScene(pScene);
@@ -280,8 +282,8 @@ void CountingGameLayer::pressedOne()
         //volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
     } else {
         happyEmoticon->setVisible(false);sadEmoticon->setVisible(true);
-        volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
-        dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
+        volDiffs[earIndex*5+freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex*5 + freqIndex, false);
+        dataStoreHandler->saveData(0,(double) (freqIndex * 1600.0 + seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
 
     }
     CCLog("Index: %d, Vol: %f", earIndex*5 + freqIndex, volDiffs[earIndex*5 + freqIndex]);
@@ -292,8 +294,8 @@ void CountingGameLayer::pressedTwo()
 {
     if (numTones == 1) {
         happyEmoticon->setVisible(true);sadEmoticon->setVisible(false);
-        volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, true);
-        dataStoreHandler->saveData("Counting_Game",(double) (freqIndex * seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
+        volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex*5 + freqIndex, true);
+        dataStoreHandler->saveData(0,(double) (freqIndex * 1600.0 + seed_freq + 250.0),  (double) (baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex]), earIndex, 0,0,0);
     } else {
         happyEmoticon->setVisible(false);sadEmoticon->setVisible(true);
         //volDiffs[earIndex*5 + freqIndex] += searchHelper->getNextTone(baseVolumes[earIndex*5 + freqIndex] + volDiffs[earIndex*5 + freqIndex], earIndex, false);
@@ -305,7 +307,7 @@ void CountingGameLayer::pressedTwo()
 PauseSceneLayer3::PauseSceneLayer3()
 {
     // Label Item (CCLabelBMFont)
-    CCMenuItemFont* item1 = CCMenuItemFont::create("Resume", this, menu_selector(PauseSceneLayer::resumeCallback));
+    CCMenuItemFont* item1 = CCMenuItemFont::create("Resume", this, menu_selector(PauseSceneLayer3::resumeCallback));
     
     
     CCMenuItemFont::setFontName("PressStart2P-Regular");
@@ -314,10 +316,10 @@ PauseSceneLayer3::PauseSceneLayer3()
     title2->setEnabled(false);
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize(34);
-    CCMenuItemToggle* item2 = CCMenuItemToggle::createWithTarget(this,
-                                                                 menu_selector(PauseSceneLayer::fxCallback),
-                                                                 CCMenuItemFont::create( "On" ),
-                                                                 CCMenuItemFont::create( "Off"),
+    item2 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer3::fxCallback),
+                                                                 CCMenuItemFont::create( "Off" ),
+                                                                 CCMenuItemFont::create( "On"),
                                                                  NULL );
     
     CCMenuItemFont::setFontName( "PressStart2P-Regular" );
@@ -326,14 +328,14 @@ PauseSceneLayer3::PauseSceneLayer3()
     title3->setEnabled(false);
     CCMenuItemFont::setFontName( "Ubuntu-Regular" );
     CCMenuItemFont::setFontSize(34);
-    CCMenuItemToggle *item3 = CCMenuItemToggle::createWithTarget(this,
-                                                                 menu_selector(PauseSceneLayer::musicCallback),
-                                                                 CCMenuItemFont::create( "On" ),
-                                                                 CCMenuItemFont::create( "Off"),
+    item3 = CCMenuItemToggle::createWithTarget(this,
+                                                                 menu_selector(PauseSceneLayer3::musicCallback),
+                                                                 CCMenuItemFont::create( "Off" ),
+                                                                 CCMenuItemFont::create( "On"),
                                                                  NULL );
     
     
-    CCMenuItemFont* item4 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer::MainMenuCallback));
+    CCMenuItemFont* item4 = CCMenuItemFont::create("Quit", this, menu_selector(PauseSceneLayer3::MainMenuCallback));
     CCMenu* menu = CCMenu::create( item1, title2, item2, title3, item3, item4, NULL);
     menu->alignItemsInColumns(1,2,2,1,NULL);
     
@@ -367,6 +369,15 @@ PauseSceneLayer3::~PauseSceneLayer3()
     
 }
 
+void PauseSceneLayer3::onEnter()
+{
+    CCLayer::onEnter();
+    
+    toneGenHelp = ((CountingGame *)(this->getParent()))->getToneGenerator();
+    item2->setSelectedIndex(toneGenHelp->getToneStatus());
+    item3->setSelectedIndex(toneGenHelp->getBackgroundStatus());
+}
+
 void PauseSceneLayer3::resumeCallback(CCObject* pSender)
 {
     ((CountingGame *)(this->getParent()))->RecursivelyResumeAllChildren(this->getParent());
@@ -378,8 +389,6 @@ void PauseSceneLayer3::resumeCallback(CCObject* pSender)
 void PauseSceneLayer3::MainMenuCallback(CCObject* pSender)
 {
     CountingGame *parent = (CountingGame *)this->getParent();
-    
-    //parent->sendData();
     
     CCScene* pScene = MainMenu::create();
     CCLayer* pLayer1 = new MainMenuLayer();
@@ -408,18 +417,18 @@ void PauseSceneLayer3::MainMenuCallback(CCObject* pSender)
 void PauseSceneLayer3::musicCallback(CCObject *sender)
 {
     if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
-        ((CountingGame *)(this->getParent()))->getToneGenerator()->disableBackground();
-    } else {
         ((CountingGame *)(this->getParent()))->getToneGenerator()->enableBackground();
+    } else {
+        ((CountingGame *)(this->getParent()))->getToneGenerator()->disableBackground();
     }
 }
 
 void PauseSceneLayer3::fxCallback(CCObject *sender)
 {
     if (dynamic_cast<CCMenuItemToggle*>(sender)->getSelectedIndex()) {
-        ((CountingGame *)(this->getParent()))->getToneGenerator()->disableTones();
-    } else {
         ((CountingGame *)(this->getParent()))->getToneGenerator()->enableTones();
+    } else {
+        ((CountingGame *)(this->getParent()))->getToneGenerator()->disableTones();
     }
 }
 
@@ -502,7 +511,7 @@ void CountingGame::MainMenuCallback(CCObject* pSender)
 
 void CountingGame::pauseMenuCallback(CCObject* pSender)
 {
-    CCLayer* pauseLayer = new PauseSceneLayer();
+    PauseSceneLayer3* pauseLayer = new PauseSceneLayer3();
     addChild(pauseLayer);
     ((CCMenuItem *)pSender)->setEnabled(false);
     RecursivelyPauseAllChildren((CCNode *)this->getChildren()->objectAtIndex(0));

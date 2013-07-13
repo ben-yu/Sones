@@ -18,11 +18,35 @@
 #include "AudiogramScene.h"
 
 USING_NS_CC;
+
+class ShaderNode : public CCNode
+{
+public:
+    ShaderNode();
+    
+    bool initWithVertex(const char *vert, const char *frag);
+    void loadShaderVertex(const char *vert, const char *frag);
+    
+    virtual void update(float dt);
+    virtual void setPosition(const CCPoint &newPosition);
+    virtual void draw();
+    
+    static ShaderNode* shaderNodeWithVertex(const char *vert, const char *frag);
+    
+private:
+    
+    ccVertex2F m_center;
+    ccVertex2F m_resolution;
+    float      m_time;
+    GLuint     m_uniformCenter, m_uniformResolution, m_uniformTime;
+};
+
 class MainMenuLayer : public CCLayer
 {
 public:
     MainMenuLayer();
     virtual void startGameCallback(CCObject* pSender);
+    virtual void onEnter();
     
     void optionsCallback(CCObject* pSender);
     void levelsCallback(CCObject* pSender);
@@ -32,6 +56,7 @@ public:
     
     CREATE_FUNC(MainMenuLayer);
 private:
+    ShaderNode *sn;
     
 };
 
@@ -51,6 +76,7 @@ public:
     void startCannonCallback(CCObject* pSender);
     void startCountingCallback(CCObject* pSender);
 
+    virtual void draw();
     
     
     CREATE_FUNC(LevelLayer);
@@ -69,9 +95,16 @@ public:
     void sensitivityCallback(CCObject* sender);
     void qualityCallback(CCObject* sender);
     void calibrateCallback(CCObject* sender);
-        
+    
+    virtual void draw();
+    virtual void onEnter();
+
+    
     CREATE_FUNC(OptionsLayer);
 private:
+    iOSBridge::ToneGeneratorHelper *toneGenHelp;
+    CCMenuItemToggle* item1;
+    CCMenuItemToggle* item2;
     
 };
 
@@ -81,6 +114,8 @@ public:
     CreditsLayer();
     virtual void onEnter();
     void backCallback(CCObject* pSender);
+    
+    virtual void draw();
     
     CREATE_FUNC(CreditsLayer);
 private:
@@ -97,6 +132,8 @@ public:
     void startCallback(CCObject* sender);
     void playSingleTone();
     void stopAndMeasureTone();
+    
+    virtual void draw();
 
     CREATE_FUNC(CalibrateLayer);
 private:
@@ -130,26 +167,5 @@ private:
     iOSBridge::DataStore *dataStoreHandler;
 };
 
-class ShaderNode : public CCNode
-{
-public:
-    ShaderNode();
-    
-    bool initWithVertex(const char *vert, const char *frag);
-    void loadShaderVertex(const char *vert, const char *frag);
-    
-    virtual void update(float dt);
-    virtual void setPosition(const CCPoint &newPosition);
-    virtual void draw();
-    
-    static ShaderNode* shaderNodeWithVertex(const char *vert, const char *frag);
-    
-private:
-    
-    ccVertex2F m_center;
-    ccVertex2F m_resolution;
-    float      m_time;
-    GLuint     m_uniformCenter, m_uniformResolution, m_uniformTime;
-};
 
 #endif /* defined(__Sonence__MainMenu__) */

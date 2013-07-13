@@ -19,8 +19,9 @@ namespace iOSBridge{
         float freq;
         float vol;
         int channel;
+        int gameType;
     };
-    
+        
     class  DataStore {
         
     public:
@@ -30,7 +31,7 @@ namespace iOSBridge{
         DataStore();
         ~DataStore();
         
-        void saveData(std::string name, double freq, double volume, int channel, int attempts, double init_time, double final_time);
+        void saveData(int nameIndex, double freq, double volume, int channel, int attempts, double init_time, double final_time);
         DataPoint* readData();
         
         DataPoint* returnData;
